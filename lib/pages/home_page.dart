@@ -321,7 +321,7 @@ class _HomePageState extends State<HomePage> {
                                     Row(
                                       children: [
                                         Text(
-                                          '${item['base_quantity']} ${_getUnitId(item['base_unit_id'])}',
+                                          '${item['sell_quantity']} ${_getUnitId(item['sell_unit_id'])}',
                                           style: const TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.normal,
