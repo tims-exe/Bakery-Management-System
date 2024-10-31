@@ -47,3 +47,5 @@ assets/nissybakesdb.db
 todos.txt
 
 .env
+
+.vscode

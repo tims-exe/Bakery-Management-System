@@ -355,7 +355,7 @@ class _OrderPageState extends State<OrderPage> {
 
     for (Map<String, dynamic> items in details) {
       invoiceItems =
-          '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ ${items['sell_rate']}/-\n';
+          '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ ${(items['sell_rate']*items['number_of_items'])}/-\n';
     }
 
     String invoiceDeliveryCharges =

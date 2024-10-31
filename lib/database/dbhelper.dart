@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sqflite/sqflite.dart';
 
 // initDb -> to help copy the database from the assets folder to sqflite database
@@ -22,8 +24,8 @@ class DbHelper {
     final path = join(dbPath, 'nissybakesdb.db');
 
     // for deleting existing database......use carefully
-    await deleteDatabase(path);
-    debugPrint('Databse Deleted');
+    //await deleteDatabase(path);
+    //debugPrint('Databse Deleted');
 
     final exist = await databaseExists(path);
 
@@ -169,27 +171,31 @@ class DbHelper {
   }
 
   Future<void> copyDatabaseToDesktop() async {
-    final dbPath = await getDatabasesPath();
-    final dbFilePath = join(dbPath, 'nissybakesdb.db');
-    if (!await File(dbFilePath).exists()) {
-      print('Database file does not exist at path: $dbFilePath');
-      return;
+
+    // /data/user/0/com.example.nissy_bakes_app/databases
+    // /storage/emulated/0/Android/data/com.example.nissy_bakes_app/files
+
+    var status = await Permission.manageExternalStorage.status;
+
+    if (!status.isGranted){
+      await Permission.manageExternalStorage.request();
     }
 
-    // Get the Downloads folder in external storage
-    Directory? externalDir = Directory('/storage/emulated/0/Download');
+    var status1 = await Permission.storage.status;
 
-    if (await externalDir.exists()) {
-      String destinationPath = join(externalDir.path, 'nissybakesdb_copy.db');
-      try {
-        // Copy the database file to the Downloads folder
-        await File(dbFilePath).copy(destinationPath);
-        print('Database copied to $destinationPath');
-      } catch (e) {
-        print('Error copying database: $e');
-      }
-    } else {
-      print('External storage directory does not exist.');
+    if (!status1.isGranted){
+      await Permission.storage.request();
+    }
+
+    try {
+      File dbPath = File('/data/user/0/com.example.nissy_bakes_app/databases/nissybakesdb.db');
+      //Directory? folderPath = Directory('/storage/emulated/0/NissyBakesBackup');
+      await dbPath.copy('/storage/emulated/0/NissyBakesBackup/nissybakesdb.db');
+
+      print('DATABASE COPIED');
+
+    } catch (e){
+      print('=======================*Error : ${e.toString()}');
     }
   }
 
