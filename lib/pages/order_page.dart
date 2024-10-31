@@ -10,6 +10,7 @@ import 'package:nissy_bakes_app/components/order_item_edit.dart';
 import 'package:nissy_bakes_app/components/order_more_details.dart';
 import 'package:nissy_bakes_app/components/search_item.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 import '../database/dbhelper.dart';
 
@@ -98,15 +99,6 @@ class _OrderPageState extends State<OrderPage> {
 
   // function to get current date from datetime
   String getDate(DateTime datetime, String param) {
-    if (param == 'order') {
-      if (currentBill['bill_date'] != '') {
-        return currentBill['bill_date'];
-      }
-    } else if (param == 'delivery') {
-      if (currentBill['delivery_date'] != '') {
-        return currentBill['delivery_date'];
-      }
-    }
     return '${datetime.day.toString().padLeft(2, '0')}-${datetime.month.toString().padLeft(2, '0')}-${datetime.year.toString().padLeft(2, '0')}';
   }
 
@@ -117,6 +109,11 @@ class _OrderPageState extends State<OrderPage> {
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
 
     return '$hours:$minutes $period';
+  }
+
+  DateTime getFormatedDate(String str) {
+    DateFormat format = DateFormat('dd-MM-yyy');
+    return format.parse(str);
   }
 
   // function to get next bill number
@@ -131,6 +128,15 @@ class _OrderPageState extends State<OrderPage> {
           currentBill['bill_number'] > billNumber) {
         currentBill['bill_number'] = billNumber;
       }
+    } else {
+      deliveryDate = getFormatedDate(currentBill['delivery_date']);
+      currentDateTime = getFormatedDate(currentBill['bill_date']);
+
+      String time = currentBill['delivery_time'];
+      List<String> parts = time.split(':');
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+      deliveryTime = TimeOfDay(hour: hour, minute: minute);
     }
   }
 
@@ -349,13 +355,13 @@ class _OrderPageState extends State<OrderPage> {
       Map<String, dynamic> header, List<Map<String, dynamic>> details) {
     String invoiceHeader = '*Nissy Bakes*\nIrumpanam, Kochi\n_fssai_: $fssai';
     String invoiceDetails =
-        '*Invoice*\nBill# : ${header['bill_number_type']}${header['bill_number_financial_year']}-${header['bill_number']}\nDate : ${formatDate(header['bill_date'])}';
+        '*Invoice*\nBill# : ${header['bill_number_type']}${header['bill_number_financial_year']}-${header['bill_number']}\nDate : ${formatDate(header['delivery_date'])}';
 
     String invoiceItems = '';
 
     for (Map<String, dynamic> items in details) {
       invoiceItems =
-          '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ ${(items['sell_rate']*items['number_of_items'])}/-\n';
+          '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ ${(items['sell_rate'] * items['number_of_items'])}/-\n';
     }
 
     String invoiceDeliveryCharges =
@@ -1064,12 +1070,14 @@ class _OrderPageState extends State<OrderPage> {
                                         if (dateTime != null) {
                                           setState(() {
                                             currentDateTime = dateTime;
-                                            deliveryDate = dateTime;
-
                                             currentBill['bill_date'] =
                                                 '${currentDateTime.day.toString().padLeft(2, '0')}-${currentDateTime.month.toString().padLeft(2, '0')}-${currentDateTime.year.toString().padLeft(2, '0')}';
-                                            currentBill['delivery_date'] =
-                                                '${deliveryDate.day.toString().padLeft(2, '0')}-${deliveryDate.month.toString().padLeft(2, '0')}-${deliveryDate.year.toString().padLeft(2, '0')}';
+
+                                            if (!_isEdit) {
+                                              deliveryDate = dateTime;
+                                              currentBill['delivery_date'] =
+                                                  '${deliveryDate.day.toString().padLeft(2, '0')}-${deliveryDate.month.toString().padLeft(2, '0')}-${deliveryDate.year.toString().padLeft(2, '0')}';
+                                            }
                                           });
                                         }
                                       },
