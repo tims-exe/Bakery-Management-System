@@ -116,6 +116,20 @@ class DbHelper {
     }
   }
 
+  // insert customer
+  Future<int> insertCustomer(Map<String, dynamic> customer) async {
+    final db = await database;
+
+    return await db.insert('customer_master', customer);
+  }
+
+  // update customer
+  Future<int> updateCustomer(Map<String, dynamic> customer, int customerID) async {
+    final db = await database;
+
+    return await db.update('customer_master', customer, where: 'customer_id = ?', whereArgs: [customerID]);
+  }
+
   //update order header
   Future<int> updateHeader(Map<String, dynamic> header, String whereClause,
       List<dynamic> whereArgs) async {
@@ -213,6 +227,24 @@ class DbHelper {
       whereArgs: whereArgs,
     );
     print('Order from $tableName DELETED');
+  }
+
+  Future<void> deleteCustomer(String tableName, int customerID) async {
+    final db = await database;
+
+    String whereClause = 'customer_id = ?';
+
+    List<dynamic> whereArgs = [
+      customerID
+    ];
+
+    await db.delete(
+      tableName,
+      where: whereClause,
+      whereArgs: whereArgs
+    );
+
+    print('Customer from $tableName DELETED');
   }
 
   Future<Database> get database async {

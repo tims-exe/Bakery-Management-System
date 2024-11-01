@@ -1,60 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:nissy_bakes_app/database/dbhelper.dart';
 
-class SearchItem extends StatefulWidget {
-  final List<Map<String, dynamic>> getOrder;
-  final Function(List<Map<String, dynamic>>) onSave;
+class SearchCustomer extends StatefulWidget {
+  final Map<String, dynamic> getCustomer;
+  final int getCustomerID;
+  final Function(Map<String, dynamic>, int) onSave;
 
-  const SearchItem({super.key, required this.getOrder, required this.onSave});
+  const SearchCustomer(
+      {super.key,
+      required this.getCustomer,
+      required this.getCustomerID,
+      required this.onSave});
 
   @override
-  State<SearchItem> createState() => _SearchItemState();
+  State<SearchCustomer> createState() => _SearchCustomerState();
 }
 
-class _SearchItemState extends State<SearchItem> {
-  final DbHelper _dbHelper = DbHelper();
-
-  List<Map<String, dynamic>> menuItems = [];
-
+class _SearchCustomerState extends State<SearchCustomer> {
+  List<Map<String, dynamic>> customerList = [];
   List<Map<String, dynamic>> searchedItems = [];
-
-  List<Map<String, dynamic>> currentOrder = [];
-
-  List<Map<String, dynamic>> units = [];
-
-  final Color _orange = const Color.fromARGB(255, 207, 73, 0);
-
+  Map<String, dynamic> currentCustomer = {};
+  int currentCustomerID = 0;
   final FocusNode _focusNode = FocusNode();
 
-  final _defaultNo = 1;
+  final _dbhelper = DbHelper();
 
-  Future<void> getMenuItems() async {
-    menuItems = await _dbHelper.getMenu('item_master');
-    List<Map<String, dynamic>> getUnits =
-        await _dbHelper.getUnits('unit_master');
+  Future<void> getCustomerList() async {
+    customerList = await _dbhelper.getCustomers('customer_master');
+
     setState(() {
-      searchedItems = menuItems;
-      units = getUnits;
+      searchedItems = customerList;
     });
-  }
-
-  String _getUnitId(int index) {
-    for (int i = 0; i < units.length; i++) {
-      if (units[i]['unit_id'] == index) {
-        return units[i]['unit_name'];
-      }
-    }
-    return '.';
   }
 
   void searchFilter(String keyword) {
     List<Map<String, dynamic>> result = [];
     if (keyword.isEmpty) {
-      result = menuItems;
+      result = customerList;
     } else {
-      result = menuItems
-          .where((user) =>
-              user['item_name'].toLowerCase().contains(keyword.toLowerCase()))
+      result = customerList
+          .where((user) => user['customer_name']
+              .toLowerCase()
+              .contains(keyword.toLowerCase()))
           .toList();
     }
     setState(() {
@@ -62,53 +49,26 @@ class _SearchItemState extends State<SearchItem> {
     });
   }
 
-  bool checkCurrentOrder(Map item) {
-    if (currentOrder.any((index) => index['item'] == item['item_name'])) {
-      return false;
-    } else {
-      return true;
-    }
-  }
+  void addCustomer(person) {
+    setState(() {
+      currentCustomer['customer_name'] = person['customer_name'];
+      currentCustomer['reference'] = person['reference'];
+      currentCustomer['customer_address'] = person['customer_address'];
+      currentCustomer['customer_phone'] = person['customer_phone'];
+      currentCustomer['customer_balance'] = person['customer_balance'];
 
-  void updateCurrentOrderNo(Map item) {
-    for (int i = 0; i < currentOrder.length; i++) {
-      if (currentOrder[i]['item'] == item['item_name']) {
-        currentOrder[i]['no']++;
-      }
-    }
-  }
-
-  void addtoCurrentOrder(Map item) {
-    if (checkCurrentOrder(item)) {
-      setState(() {
-        currentOrder.add({
-          'id': item['item_id'],
-          'item': item['item_name'],
-          'no': _defaultNo,
-          'price': item['menu_price'],
-          'weight': item['base_quantity'],
-          'unit': _getUnitId(item['base_unit_id']),
-          'sell_unit': _getUnitId(item['sell_unit_id']),
-          'unit_id': item['base_unit_id'],
-          'sell_qnty': item['sell_quantity'],
-          'sell_unit_id': item['sell_unit_id'],
-          'conversion': item['base_quantity'],
-          'sell_rate': item['menu_price'],
-        });
-      });
-    } else {
-      setState(() {
-        updateCurrentOrderNo(item);
-      });
-    }
+      currentCustomerID = person['customer_id'];
+    });
   }
 
   @override
   void initState() {
     super.initState();
 
-    getMenuItems();
-    currentOrder = widget.getOrder;
+    currentCustomer = widget.getCustomer;
+    currentCustomerID = widget.getCustomerID;
+
+    getCustomerList();
 
     Future.delayed(const Duration(milliseconds: 100), () {
       FocusScope.of(context).requestFocus(_focusNode);
@@ -159,8 +119,8 @@ class _SearchItemState extends State<SearchItem> {
                     ),
                     focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: _orange)),
-                    hintText: 'Search the Menu...',
+                        borderSide: const BorderSide(color: Colors.black)),
+                    hintText: 'Search Customers...',
                     prefixIcon: const Icon(Icons.search),
                   ),
                 ),
@@ -168,7 +128,7 @@ class _SearchItemState extends State<SearchItem> {
             ],
           ),
           Expanded(
-            child: menuItems.isEmpty
+            child: customerList.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : Container(
                     decoration: BoxDecoration(
@@ -187,28 +147,26 @@ class _SearchItemState extends State<SearchItem> {
                     child: ListView.builder(
                       itemCount: searchedItems.length,
                       itemBuilder: (context, index) {
-                        final item = searchedItems[index];
+                        final person = searchedItems[index];
                         return MaterialButton(
                           onPressed: () {
-                            addtoCurrentOrder(item);
-                            widget.onSave(currentOrder);
+                            addCustomer(person);
+                            widget.onSave(currentCustomer, currentCustomerID);
                             Navigator.pop(context);
                           },
                           child: ListTile(
                               title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Text(
-                                item['item_name'],
+                                person['customer_name'],
                                 style: const TextStyle(fontSize: 18),
                               ),
-                              Text(
-                                '${item['base_quantity']} ${_getUnitId(item['base_unit_id'])}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.normal,
+                              if (person['reference'] != '')
+                                Text(
+                                  ' (${person['reference']})',
+                                  style: const TextStyle(fontSize: 18),
                                 ),
-                              ),
                             ],
                           )),
                         );

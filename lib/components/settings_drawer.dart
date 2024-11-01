@@ -72,6 +72,32 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                 title: const Row(
                   children: [
                     Icon(
+                      Icons.person,
+                      size: 30,
+                    ),
+                    SizedBox(
+                      width: 15,
+                    ),
+                    Text(
+                      'Customers',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.pushNamed(context, '/customers');
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                title: const Row(
+                  children: [
+                    Icon(
                       Icons.storage,
                       size: 30,
                     ),

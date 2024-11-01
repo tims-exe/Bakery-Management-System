@@ -7,6 +7,7 @@ import 'package:nissy_bakes_app/pages/production_page.dart';
 import 'package:nissy_bakes_app/pages/splash_screen.dart';
 
 import 'database/dbhelper.dart';
+import 'pages/customers_page.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -33,6 +34,7 @@ class MyApp extends StatelessWidget {
         '/homepage': (context) => const HomePage(),
         '/itemspage': (context) => const ItemsPage(),
         '/productionpage': (context) => const ProductionPage(),
+        '/customers' : (context) => const CustomersPage(),
       },
     );
   }
