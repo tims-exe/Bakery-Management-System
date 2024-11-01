@@ -496,6 +496,11 @@ class _OrderPageState extends State<OrderPage> {
                     children: [
                       TextButton(
                         onPressed: () {
+                          if (getMobileNumber(currentBill['customer_id']) !=
+                              '') {
+                            mobileNumberFieldController.text =
+                                getMobileNumber(currentBill['customer_id']);
+                          }
                           showDialog(
                             context: context,
                             builder: (context) {
@@ -561,13 +566,7 @@ class _OrderPageState extends State<OrderPage> {
                                             getItemDetails(i, currentOrder[i]);
                                         orderDetails.add(itemDetails);
                                       }
-                                      if (getMobileNumber(
-                                              orderHeader['customer_id']) !=
-                                          '') {
-                                        mobileNumberFieldController.text =
-                                            getMobileNumber(
-                                                orderHeader['customer_id']);
-                                      }
+
                                       billSaved();
                                       currentBill.clear();
                                       currentOrder.clear();
