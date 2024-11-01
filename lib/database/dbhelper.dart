@@ -142,12 +142,8 @@ class DbHelper {
     String whereClause = 'customer_id = ?';
     List<dynamic> whereArgs = [customerId];
 
-    return await db.query(
-      tablename,
-      where: whereClause, 
-      whereArgs: whereArgs, 
-      orderBy: 'bill_number DESC'
-    );
+    return await db.query(tablename,
+        where: whereClause, whereArgs: whereArgs, orderBy: 'bill_number DESC');
   }
 
   // fetch order items based on order id
@@ -171,30 +167,29 @@ class DbHelper {
   }
 
   Future<void> copyDatabaseToDesktop() async {
-
     // /data/user/0/com.example.nissy_bakes_app/databases
     // /storage/emulated/0/Android/data/com.example.nissy_bakes_app/files
 
     var status = await Permission.manageExternalStorage.status;
 
-    if (!status.isGranted){
+    if (!status.isGranted) {
       await Permission.manageExternalStorage.request();
     }
 
     var status1 = await Permission.storage.status;
 
-    if (!status1.isGranted){
+    if (!status1.isGranted) {
       await Permission.storage.request();
     }
 
     try {
-      File dbPath = File('/data/user/0/com.example.nissy_bakes_app/databases/nissybakesdb.db');
+      File dbPath = File(
+          '/data/user/0/com.example.nissy_bakes_app/databases/nissybakesdb.db');
       //Directory? folderPath = Directory('/storage/emulated/0/NissyBakesBackup');
       await dbPath.copy('/storage/emulated/0/NissyBakesBackup/nissybakesdb.db');
 
       print('DATABASE COPIED');
-
-    } catch (e){
+    } catch (e) {
       print('=======================*Error : ${e.toString()}');
     }
   }

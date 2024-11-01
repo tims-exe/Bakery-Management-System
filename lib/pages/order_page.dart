@@ -327,6 +327,16 @@ class _OrderPageState extends State<OrderPage> {
     return '.';
   }
 
+  String _getPrintFormula(int index) {
+    for (int i = 0; i < _units.length; i++) {
+      print(_units[i]);
+      if (_units[i]['unit_id'] == index) {
+        return _units[i]['print_formula'];
+      }
+    }
+    return '.';
+  }
+
   String _getUnitId(int index) {
     for (int i = 0; i < _units.length; i++) {
       if (_units[i]['unit_id'] == index) {
@@ -360,8 +370,18 @@ class _OrderPageState extends State<OrderPage> {
     String invoiceItems = '';
 
     for (Map<String, dynamic> items in details) {
-      invoiceItems =
-          '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      String formula = _getPrintFormula(items['sell_unit_id']);
+      print(formula);
+      if (formula == 'num_x_sellqnty') {
+        invoiceItems =
+            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      } else if (formula == 'num_x_sellqnty_unit') {
+        invoiceItems =
+            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} (${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      } else {
+        invoiceItems =
+            '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      }
     }
 
     String invoiceDeliveryCharges =
