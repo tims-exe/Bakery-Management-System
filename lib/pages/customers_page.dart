@@ -13,7 +13,6 @@ class CustomersPage extends StatefulWidget {
 }
 
 class _CustomersPageState extends State<CustomersPage> {
-
   // initializing current customer
   Map<String, dynamic> currentCustomer = {
     'customer_name': null,
@@ -28,8 +27,7 @@ class _CustomersPageState extends State<CustomersPage> {
 
   DateTime modifiedDateTime = DateTime.now();
 
-
-  // all textfield variables 
+  // all textfield variables
   TextEditingController name = TextEditingController();
   TextEditingController reference = TextEditingController();
   TextEditingController address = TextEditingController();
@@ -73,7 +71,7 @@ class _CustomersPageState extends State<CustomersPage> {
     });
   }
 
-  // add new customer 
+  // add new customer
   void addNewCustomer() async {
     print('Customer Added');
 
@@ -94,9 +92,12 @@ class _CustomersPageState extends State<CustomersPage> {
     clearAll();
   }
 
-  // edit existing customer 
+  // edit existing customer
   void editCustomer() async {
     print('Customer Edited');
+
+    currentCustomer['modified_datetime'] =
+        '${modifiedDateTime.year.toString().padLeft(2, '0')}-${modifiedDateTime.month.toString().padLeft(2, '0')}-${modifiedDateTime.day.toString().padLeft(2, '0')} ${modifiedDateTime.hour.toString().padLeft(2, '0')}:${modifiedDateTime.minute.toString().padLeft(2, '0')}:${modifiedDateTime.second.toString().padLeft(2, '0')}';
 
     await _dbhelper.updateCustomer(currentCustomer, currentCustomerID);
 
@@ -299,21 +300,29 @@ class _CustomersPageState extends State<CustomersPage> {
                                             MainAxisAlignment.spaceBetween,
                                         children: [
                                           SizedBox(
-                                            width: 200,
+                                            width: 250,
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  customer['customer_name'],
-                                                  style: const TextStyle(
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
-                                                ),
                                                 if (customer['reference'] != '')
                                                   Text(
-                                                      '(${customer['reference']})'),
+                                                    '${customer['customer_name']} (${customer['reference']})',
+                                                    style: const TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                    ),
+                                                  )
+                                                else
+                                                  Text(
+                                                    '${customer['customer_name']}',
+                                                    style: const TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                    ),
+                                                  ),
                                                 const SizedBox(height: 10),
                                                 if (customer[
                                                         'customer_address'] !=
@@ -404,12 +413,20 @@ class _CustomersPageState extends State<CustomersPage> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
-                                      'Customer Details',
-                                      style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w500),
-                                    ),
+                                    if (_isEdit)
+                                      Text(
+                                        "${name.text}'s Details",
+                                        style: const TextStyle(
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.w500),
+                                      )
+                                    else
+                                      const Text(
+                                        'Customer Details',
+                                        style: TextStyle(
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.w500),
+                                      ),
                                     IconButton(
                                       onPressed: () {
                                         if (!_isEdit) {
@@ -649,6 +666,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                 Expanded(
                                   child: MaterialButton(
                                     onPressed: () {
+                                      print(currentCustomerID);
                                       if (name.text != '' &&
                                           balance.text != '') {
                                         currentCustomer['customer_name'] =
