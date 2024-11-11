@@ -54,7 +54,9 @@ This project is used by:
 - [x] unit convertion
 - [x] edit orders
 - [x] filter orders
+- [x] handling new customers
+- [x] editing current customers
+- [ ] handling items
 - [ ] production and delivery view
-- [ ] customer view
 - [ ] handle customer balance
 - [ ] optimize
