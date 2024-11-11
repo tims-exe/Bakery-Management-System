@@ -201,7 +201,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-
           // Menu Screen
           Container(
             margin: const EdgeInsets.only(left: 30, top: 30, bottom: 30),
