@@ -39,7 +39,7 @@ This project is used by:
 
 
 
-### Functionalities
+### Dev ToDo
 
 - [x] setup application
 - [x] create home screen
