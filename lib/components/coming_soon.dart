@@ -13,7 +13,7 @@ class ComingSoon extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Coming Soon'),
+            const Text('Coming Soon !!'),
             IconButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/homepage');

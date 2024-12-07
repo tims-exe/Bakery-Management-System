@@ -348,8 +348,8 @@ class _OrderPageState extends State<OrderPage> {
 
   void sendWhatsAppMessage(String phoneNumber, String message) async {
     final Uri whatsappUrl = Uri.parse(
-        'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
-
+        'https://wa.me/91$phoneNumber?text=${Uri.encodeComponent(message)}');
+    print(whatsappUrl);
     try {
       if (await canLaunchUrl(whatsappUrl)) {
         await launchUrl(whatsappUrl);
@@ -403,7 +403,7 @@ class _OrderPageState extends State<OrderPage> {
     }
 
     String invoiceFooter =
-        'Payments by Cash / Cheque / GPay @$upiNo / UPI: !$upi upon delivery\n\n*Please share your feedback using the link $link*\n\n      Reach Us @ *$mobileNo* or *$email*\n\n       _Thank you for your order_';
+        'Payments by Cash / Cheque / GPay @$upiNo / UPI: $upi upon delivery\n\n*Please share your feedback using the link $link*\n\n      Reach Us @ *$mobileNo* or *$email*\n\n       _Thank you for your order_';
 
     String msg =
         '$invoiceHeader\n\n$invoiceDetails\n\n$invoiceItems\n$invoiceDeliveryCharges\n\n$invoiceTotalOrderAmount\n\n$invoiceDiscountAmount$invoiceAdvanceAmount$invoiceFooter';
