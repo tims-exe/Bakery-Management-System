@@ -39,7 +39,7 @@ This project is used by:
 
 
 
-### To Do
+### Dev ToDo
 
 - [x] setup application
 - [x] create home screen
@@ -59,4 +59,4 @@ This project is used by:
 - [ ] handling items
 - [ ] production and delivery view
 - [ ] handle customer balance
-- [ ] optimize
+- [ ] refactor
