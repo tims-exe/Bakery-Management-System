@@ -26,10 +26,12 @@ The **Bakery Management System** is an all-in-one solution designed to simplify 
 - **🚚 Delivery Management**  
   Keep track of upcoming deliveries and organize them by future dates, ensuring every order is delivered on time.
 
-## 📚 Tech Stack
+## 👾 Tech Stack
 
-*   **Framework**: [Flutter](https://flutter.dev/)
-*   **Database**: `sqflite` for local SQLite storage
+| Language | Framework | Database |
+|----------|-----------|----------|
+| [Dart](https://dart.dev/)     | [Flutter](https://flutter.dev/)   | sqflite  |
+
 
 ## Used By
 
