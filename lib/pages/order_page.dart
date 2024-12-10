@@ -432,7 +432,7 @@ class _OrderPageState extends State<OrderPage> {
     }
   }
 
-  void updateFinalPayment(bool paid) {
+  /* void updateFinalPayment(bool paid) {
     if (paid == true) {
       var total = getTotalAmount(currentOrder);
       currentBill['final_payment'] = total +
@@ -444,6 +444,16 @@ class _OrderPageState extends State<OrderPage> {
     } else if (paid == false) {
       currentBill['final_payment'] = 0;
       finalPaymentFieldController.text = '0';
+    }
+  } */
+
+  void checkFinalPayment() {
+    var total = getTotalAmount(currentOrder);
+    if (total + currentBill['delivery_charges'] - currentBill['discount_amount'] - currentBill['advance_paid'] - currentBill['final_payment'] == 0){
+      currentBill['payment_done'] = true;
+    }
+    else{
+      currentBill['payment_done'] = false;
     }
   }
 
@@ -465,9 +475,9 @@ class _OrderPageState extends State<OrderPage> {
     currentBill['total_amount'] = total;
     //currentBill['advance_paid'] = num.parse(currentBill['advance_paid']);
 
-    if (currentBill['payment_done'] == true) {
+    /* if (currentBill['payment_done'] == true) {
       _isPaid = true;
-    }
+    } */
 
     billNumber = currentBill['bill_number'];
     deliveryChargesFieldController.text =
@@ -488,7 +498,8 @@ class _OrderPageState extends State<OrderPage> {
 
   @override
   Widget build(BuildContext context) {
-    updateFinalPayment(_isPaid);
+    //updateFinalPayment(_isPaid);
+    checkFinalPayment();
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -1094,13 +1105,10 @@ class _OrderPageState extends State<OrderPage> {
                                                   onSave: (updatedBill) {
                                                     setState(() {
                                                       currentBill = updatedBill;
-                                                      if (currentBill[
-                                                              'payment_done'] ==
-                                                          true) {
-                                                        _isPaid = true;
-                                                      } else {
-                                                        _isPaid = false;
-                                                      }
+                                                      if (currentBill['payment_done'] == true) {
+                                                        currentBill['final_payment'] = getTotalAmount(currentOrder) + currentBill['delivery_charges'] - currentBill['discount_amount'] - currentBill['advance_paid'];
+                                                        finalPaymentFieldController.text = currentBill['final_payment'].toString();
+                                                      } 
                                                     });
                                                   },
                                                 );
@@ -1185,28 +1193,39 @@ class _OrderPageState extends State<OrderPage> {
                                               alignment: Alignment.centerRight,
                                               child: TextButton(
                                                 onPressed: () {
-                                                  showDialog(context: context, builder: (BuildContext context){
-                                                    return SelectCustomer(
-                                                      customers: customerList, 
-                                                      currentCustomer: defaultCustomer, 
-                                                      currentCustomerID: defaultCustomerID, 
-                                                      onCustomerSelected: (selectedCustomer, selectedCustomerIndex) {
-                                                        setState(() {
-                                                          print(selectedCustomer);
-                                                          print(selectedCustomerIndex);
-                                                          defaultCustomer = selectedCustomer;
-                                                          defaultCustomerID = getCustomerID(selectedCustomerIndex);
-                                                          print(defaultCustomerID);
-                                                        });
-                                                      },
-                                                    );
-                                                  });
+                                                  showDialog(
+                                                      context: context,
+                                                      builder: (BuildContext
+                                                          context) {
+                                                        return SelectCustomer(
+                                                          customers:
+                                                              customerList,
+                                                          currentCustomer:
+                                                              defaultCustomer,
+                                                          currentCustomerID:
+                                                              defaultCustomerID,
+                                                          onCustomerSelected:
+                                                              (selectedCustomer,
+                                                                  selectedCustomerIndex) {
+                                                            setState(() {
+                                                              //print(selectedCustomer);
+                                                              //print(selectedCustomerIndex);
+                                                              defaultCustomer =
+                                                                  selectedCustomer;
+                                                              defaultCustomerID =
+                                                                  getCustomerID(
+                                                                      selectedCustomerIndex);
+                                                              //print(defaultCustomerID);
+                                                            });
+                                                          },
+                                                        );
+                                                      });
                                                 },
                                                 child: Text(
                                                   adjustCustomerName(
                                                       defaultCustomer),
                                                   style: const TextStyle(
-                                                    fontSize: 16,
+                                                    fontSize: 18,
                                                     color: Colors.black,
                                                   ),
                                                 ),
@@ -1319,9 +1338,15 @@ class _OrderPageState extends State<OrderPage> {
                                                 ),
                                                 onSubmitted: (value) {
                                                   setState(() {
-                                                    currentBill[
+                                                    if (value.isNotEmpty){
+                                                      currentBill[
                                                             'delivery_charges'] =
                                                         num.parse(value);
+                                                    }
+                                                    else{
+                                                      currentBill['delivery_charges'] = 0;
+                                                      deliveryChargesFieldController.text = '0';
+                                                    }
                                                   });
                                                 },
                                                 style: const TextStyle(
@@ -1382,9 +1407,15 @@ class _OrderPageState extends State<OrderPage> {
                                                 ),
                                                 onSubmitted: (value) {
                                                   setState(() {
-                                                    currentBill[
+                                                    if (value.isNotEmpty){
+                                                      currentBill[
                                                             'discount_amount'] =
                                                         num.parse(value);
+                                                    }
+                                                    else{
+                                                      currentBill['discount_amount'] = 0;
+                                                      discountFieldController.text = '0';
+                                                    }
                                                   });
                                                 },
                                                 style: const TextStyle(
@@ -1477,9 +1508,15 @@ class _OrderPageState extends State<OrderPage> {
                                                 ),
                                                 onSubmitted: (value) {
                                                   setState(() {
-                                                    currentBill[
+                                                    if (value.isNotEmpty){
+                                                      currentBill[
                                                             'advance_paid'] =
                                                         num.parse(value);
+                                                    }
+                                                    else{
+                                                      currentBill['advance_paid'] = 0;
+                                                      advancePaidFieldController.text = '0';
+                                                    }
                                                   });
                                                 },
                                                 style: const TextStyle(
@@ -1540,9 +1577,13 @@ class _OrderPageState extends State<OrderPage> {
                                                 ),
                                                 onSubmitted: (value) {
                                                   setState(() {
-                                                    currentBill[
-                                                            'final_payment'] =
-                                                        num.parse(value);
+                                                    if (value.isNotEmpty){
+                                                      currentBill['final_payment'] = num.parse(value);
+                                                    }
+                                                    else{
+                                                      currentBill['final_payment'] = 0;
+                                                      finalPaymentFieldController.text = '0';
+                                                    }
                                                   });
                                                 },
                                                 style: const TextStyle(
