@@ -143,9 +143,9 @@ class DbHelper {
   }
 
   // fetch order header
-  Future<List<Map<String, dynamic>>> getOrderHeader(String tablename) async {
+  Future<List<Map<String, dynamic>>> getOrderHeader(String tablename, String filter) async {
     final db = await database;
-    return await db.query(tablename, orderBy: 'bill_number DESC');
+    return await db.query(tablename, orderBy: filter);
   }
 
   // fetch order header

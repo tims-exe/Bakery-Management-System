@@ -28,6 +28,8 @@ class _ItemsPageState extends State<ItemsPage> {
   String currentCustomer = 'All Customers';
   int currentCustomerId = 0;
 
+  String _ordersFilter = 'bill_number DESC';
+
   //final Map<String, dynamic> _currentBill = {};
   List<Map<String, dynamic>> _currentOrder = [];
   List<Map<String, dynamic>> _units = [];
@@ -41,7 +43,7 @@ class _ItemsPageState extends State<ItemsPage> {
 
   void getOrderDetails() async {
     List<Map<String, dynamic>> getHeader =
-        await _dbhelper.getOrderHeader('order_header');
+        await _dbhelper.getOrderHeader('order_header', 'bill_number DESC');
     for (int i = 0; i < getHeader.length; i++) {
       List<Map<String, dynamic>> fetchedOrder = await _dbhelper.getOrderItems(
         'order_details',
@@ -62,10 +64,10 @@ class _ItemsPageState extends State<ItemsPage> {
         getHeader.map((item) => Map<String, dynamic>.from(item)).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getOrder() async {
+  Future<List<Map<String, dynamic>>> getOrder(String filter) async {
     List<Map<String, dynamic>> getHeader;
     if (currentCustomer == 'All Customers') {
-      getHeader = await _dbhelper.getOrderHeader('order_header');
+      getHeader = await _dbhelper.getOrderHeader('order_header', filter);
     } else {
       getHeader = await _dbhelper.getOrderHeaderCustomer(
           'order_header', currentCustomerId);
@@ -251,25 +253,46 @@ class _ItemsPageState extends State<ItemsPage> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Container(
-                                    alignment: Alignment.centerLeft,
-                                    //color: Colors.amber,
-                                    width: 80,
-                                    child: Text(
-                                      'Bill No',
-                                      style: TextStyle(
-                                        fontSize: headingTextSize,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
+                                      alignment: Alignment.centerLeft,
+                                      //color: Colors.amber,
+                                      width: 100,
+                                      child: TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (_ordersFilter ==
+                                                'bill_number DESC') {
+                                              _ordersFilter = 'bill_number ASC';
+                                            } else {
+                                              _ordersFilter =
+                                                  'bill_number DESC';
+                                            }
+                                          });
+                                        },
+                                        child: Text(
+                                          'Bill No',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: headingTextSize,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      )),
                                   Container(
                                     alignment: Alignment.center,
                                     width: headingSize,
-                                    child: Text(
-                                      'Date',
-                                      style: TextStyle(
-                                        fontSize: headingTextSize,
-                                        fontWeight: FontWeight.w500,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _ordersFilter = 'delivery_date DESC';
+                                        });
+                                      },
+                                      child: Text(
+                                        'Delivery',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: headingTextSize,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -417,7 +440,7 @@ class _ItemsPageState extends State<ItemsPage> {
                             ),
                             Expanded(
                               child: FutureBuilder<List<Map<String, dynamic>>>(
-                                future: getOrder(),
+                                future: getOrder(_ordersFilter),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
@@ -610,7 +633,7 @@ class _ItemsPageState extends State<ItemsPage> {
                                                       width: orderSize + 10,
                                                       child: Text(
                                                         getBillDate(header[
-                                                            'bill_date']),
+                                                            'delivery_date']),
                                                         style: TextStyle(
                                                             fontSize:
                                                                 orderTextSize),
