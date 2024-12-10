@@ -9,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nissy_bakes_app/components/order_item_edit.dart';
 import 'package:nissy_bakes_app/components/order_more_details.dart';
 import 'package:nissy_bakes_app/components/search_item.dart';
+import 'package:path/path.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 
@@ -48,12 +49,14 @@ class _OrderPageState extends State<OrderPage> {
   final upiNo = dotenv.env['UPI_NO'];
   final link = dotenv.env['LINK'];
   final email = dotenv.env['EMAIL'];
-  final billNumberFinancialYear = dotenv.env['BILL_NUMBER_FINANCIAL_YEAR'];
+  final int billNumberFinancialYear =
+      int.parse(dotenv.env['BILL_NUMBER_FINANCIAL_YEAR']!);
 
   // variables
   int billNumber = 0;
 
   bool _isEdit = false;
+  bool _isPaid = false;
 
   String defaultCustomer = 'Guest';
   int defaultCustomerID = 1;
@@ -243,6 +246,8 @@ class _OrderPageState extends State<OrderPage> {
     header['modified_datetime'] =
         '${modifiedDateTime.year.toString().padLeft(2, '0')}-${modifiedDateTime.month.toString().padLeft(2, '0')}-${modifiedDateTime.day.toString().padLeft(2, '0')} ${modifiedDateTime.hour.toString().padLeft(2, '0')}:${modifiedDateTime.minute.toString().padLeft(2, '0')}:${modifiedDateTime.second.toString().padLeft(2, '0')}';
 
+    //print('######${num.parse(finalPaymentFieldController.text)}');
+
     return header;
   }
 
@@ -425,6 +430,19 @@ class _OrderPageState extends State<OrderPage> {
     }
   }
 
+  void updateFinalPayment(bool paid) {
+    if (paid == true){
+      var total = getTotalAmount(currentOrder);
+      print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${total}');
+      currentBill['final_payment'] = total + currentBill['delivery_charges'] - currentBill['advance_paid'] - currentBill['discount_amount'];
+      finalPaymentFieldController.text = currentBill['final_payment'].toString();
+    }
+    else if (paid == false){
+      currentBill['final_payment'] = 0;
+      finalPaymentFieldController.text = '0';
+    }
+  }
+
   // initial state
   @override
   void initState() {
@@ -434,6 +452,15 @@ class _OrderPageState extends State<OrderPage> {
 
     currentBill = Map.from(widget.getBill);
     currentOrder = widget.getOrder;
+
+    var total = getTotalAmount(currentOrder);
+    currentBill['total_amount'] = total;
+    //currentBill['advance_paid'] = num.parse(currentBill['advance_paid']);
+
+    if (currentBill['payment_done'] == true) {
+      _isPaid = true;
+    }
+
     billNumber = currentBill['bill_number'];
     deliveryChargesFieldController.text =
         currentBill['delivery_charges'].toString();
@@ -441,6 +468,7 @@ class _OrderPageState extends State<OrderPage> {
     finalPaymentFieldController.text = currentBill['final_payment'].toString();
     discountFieldController.text = currentBill['discount_amount'].toString();
     mobileNumberFieldController.text = upiNo!;
+
     getNextBillNumber();
     Future.delayed(const Duration(seconds: 1), () {
       setState(() {
@@ -453,6 +481,7 @@ class _OrderPageState extends State<OrderPage> {
 
   @override
   Widget build(BuildContext context) {
+    updateFinalPayment(_isPaid);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -1041,7 +1070,7 @@ class _OrderPageState extends State<OrderPage> {
                                       children: [
                                         // bill info
                                         Text(
-                                          'Bill : B2425-$billNumber',
+                                          'Bill : B$billNumberFinancialYear-$billNumber',
                                           style: const TextStyle(
                                             fontSize: 25,
                                             fontWeight: FontWeight.w500,
@@ -1058,7 +1087,11 @@ class _OrderPageState extends State<OrderPage> {
                                                   onSave: (updatedBill) {
                                                     setState(() {
                                                       currentBill = updatedBill;
-                                                      print(currentBill);
+                                                      if (currentBill['payment_done'] == true) {
+                                                        _isPaid = true;
+                                                      } else {
+                                                        _isPaid = false;
+                                                      }
                                                     });
                                                   },
                                                 );
@@ -1283,7 +1316,7 @@ class _OrderPageState extends State<OrderPage> {
                                                   setState(() {
                                                     currentBill[
                                                             'delivery_charges'] =
-                                                        value;
+                                                        num.parse(value);
                                                   });
                                                 },
                                                 style: const TextStyle(
@@ -1346,7 +1379,7 @@ class _OrderPageState extends State<OrderPage> {
                                                   setState(() {
                                                     currentBill[
                                                             'discount_amount'] =
-                                                        value;
+                                                        num.parse(value);
                                                   });
                                                 },
                                                 style: const TextStyle(
@@ -1440,7 +1473,8 @@ class _OrderPageState extends State<OrderPage> {
                                                 onSubmitted: (value) {
                                                   setState(() {
                                                     currentBill[
-                                                        'advance_paid'] = value;
+                                                            'advance_paid'] =
+                                                        num.parse(value);
                                                   });
                                                 },
                                                 style: const TextStyle(
@@ -1503,7 +1537,7 @@ class _OrderPageState extends State<OrderPage> {
                                                   setState(() {
                                                     currentBill[
                                                             'final_payment'] =
-                                                        value;
+                                                        num.parse(value);
                                                   });
                                                 },
                                                 style: const TextStyle(
