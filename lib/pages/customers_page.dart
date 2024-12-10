@@ -81,7 +81,7 @@ class _CustomersPageState extends State<CustomersPage> {
     await _dbhelper.insertCustomer(currentCustomer);
 
     Fluttertoast.showToast(
-      msg: "${currentCustomer['customer_name']} Inserted",
+      msg: "${currentCustomer['customer_name']} Added",
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.BOTTOM,
       backgroundColor: Colors.green,

@@ -48,6 +48,7 @@ class _OrderPageState extends State<OrderPage> {
   final upiNo = dotenv.env['UPI_NO'];
   final link = dotenv.env['LINK'];
   final email = dotenv.env['EMAIL'];
+  final billNumberFinancialYear = dotenv.env['BILL_NUMBER_FINANCIAL_YEAR'];
 
   // variables
   int billNumber = 0;
@@ -214,7 +215,7 @@ class _OrderPageState extends State<OrderPage> {
 
     // get bill number type and financial year from settings table
     header['bill_number_type'] = 'B';
-    header['bill_number_financial_year'] = 2425;
+    header['bill_number_financial_year'] = billNumberFinancialYear;
 
     header['bill_number'] = billNumber;
     header['bill_date'] =
@@ -1118,6 +1119,7 @@ class _OrderPageState extends State<OrderPage> {
                                     children: [
                                       // customer details
                                       Container(
+                                        //color: Colors.amber,
                                         margin:
                                             EdgeInsets.only(bottom: 5, top: 2),
                                         //color: Colors.amber,
@@ -1137,7 +1139,7 @@ class _OrderPageState extends State<OrderPage> {
                                             ),
                                             Container(
                                               //color: Colors.cyan,
-                                              //width: 100,
+                                              //width: 250,
                                               alignment: Alignment.centerRight,
                                               child: DropdownButton<String>(
                                                 value: defaultCustomer,
