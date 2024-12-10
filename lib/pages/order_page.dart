@@ -9,7 +9,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nissy_bakes_app/components/order_item_edit.dart';
 import 'package:nissy_bakes_app/components/order_more_details.dart';
 import 'package:nissy_bakes_app/components/search_item.dart';
-import 'package:path/path.dart';
+import 'package:nissy_bakes_app/components/select_customer.dart';
+//import 'package:path/path.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 
@@ -93,12 +94,13 @@ class _OrderPageState extends State<OrderPage> {
   List<Map<String, dynamic>> _units = [];
   List<Map<String, dynamic>> _allItems = [];
 
-  void _loadUnits() async {
+  void _loadData() async {
     List<Map<String, dynamic>> units = await _dbhelper.getUnits('unit_master');
     List<Map<String, dynamic>> items = await _dbhelper
         .getUnits('item_master'); // reuse same method for similar db request
     _units = units;
     _allItems = items;
+    getCustomerList();
   }
 
   // function to get current date from datetime
@@ -145,7 +147,7 @@ class _OrderPageState extends State<OrderPage> {
   }
 
   // function to get customers list
-  Future getCustomerList() async {
+  void getCustomerList() async {
     customers = await _dbhelper.getCustomers('customer_master');
 
     for (int i = 0; i < customers.length; i++) {
@@ -431,16 +433,22 @@ class _OrderPageState extends State<OrderPage> {
   }
 
   void updateFinalPayment(bool paid) {
-    if (paid == true){
+    if (paid == true) {
       var total = getTotalAmount(currentOrder);
-      print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${total}');
-      currentBill['final_payment'] = total + currentBill['delivery_charges'] - currentBill['advance_paid'] - currentBill['discount_amount'];
-      finalPaymentFieldController.text = currentBill['final_payment'].toString();
-    }
-    else if (paid == false){
+      currentBill['final_payment'] = total +
+          currentBill['delivery_charges'] -
+          currentBill['advance_paid'] -
+          currentBill['discount_amount'];
+      finalPaymentFieldController.text =
+          currentBill['final_payment'].toString();
+    } else if (paid == false) {
       currentBill['final_payment'] = 0;
       finalPaymentFieldController.text = '0';
     }
+  }
+
+  String adjustCustomerName(String name) {
+    return name.length > 30 ? '${name.substring(0, 25)}...' : name;
   }
 
   // initial state
@@ -448,7 +456,7 @@ class _OrderPageState extends State<OrderPage> {
   void initState() {
     super.initState();
     _isEdit = widget.isEdit;
-    _loadUnits();
+    _loadData();
 
     currentBill = Map.from(widget.getBill);
     currentOrder = widget.getOrder;
@@ -472,7 +480,6 @@ class _OrderPageState extends State<OrderPage> {
     getNextBillNumber();
     Future.delayed(const Duration(seconds: 1), () {
       setState(() {
-        getCustomerList();
         //getCustomer(currentBill['customer_id']);
         print(currentBill['total_amount']);
       });
@@ -1087,7 +1094,9 @@ class _OrderPageState extends State<OrderPage> {
                                                   onSave: (updatedBill) {
                                                     setState(() {
                                                       currentBill = updatedBill;
-                                                      if (currentBill['payment_done'] == true) {
+                                                      if (currentBill[
+                                                              'payment_done'] ==
+                                                          true) {
                                                         _isPaid = true;
                                                       } else {
                                                         _isPaid = false;
@@ -1174,37 +1183,33 @@ class _OrderPageState extends State<OrderPage> {
                                               //color: Colors.cyan,
                                               //width: 250,
                                               alignment: Alignment.centerRight,
-                                              child: DropdownButton<String>(
-                                                value: defaultCustomer,
-                                                icon: const Icon(
-                                                    Icons.arrow_drop_down),
-                                                style: const TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 18,
-                                                ),
-                                                onChanged: (String? newValue) {
-                                                  setState(() {
-                                                    defaultCustomer = newValue!;
-                                                    defaultCustomerID =
-                                                        getCustomerID(
-                                                            customerList.indexOf(
-                                                                defaultCustomer));
-                                                    currentBill['customer_id'] =
-                                                        defaultCustomerID;
+                                              child: TextButton(
+                                                onPressed: () {
+                                                  showDialog(context: context, builder: (BuildContext context){
+                                                    return SelectCustomer(
+                                                      customers: customerList, 
+                                                      currentCustomer: defaultCustomer, 
+                                                      currentCustomerID: defaultCustomerID, 
+                                                      onCustomerSelected: (selectedCustomer, selectedCustomerIndex) {
+                                                        setState(() {
+                                                          print(selectedCustomer);
+                                                          print(selectedCustomerIndex);
+                                                          defaultCustomer = selectedCustomer;
+                                                          defaultCustomerID = getCustomerID(selectedCustomerIndex);
+                                                          print(defaultCustomerID);
+                                                        });
+                                                      },
+                                                    );
                                                   });
                                                 },
-                                                items: customerList.map<
-                                                        DropdownMenuItem<
-                                                            String>>(
-                                                    (String value) {
-                                                  return DropdownMenuItem<
-                                                      String>(
-                                                    value: value,
-                                                    child: Text(value),
-                                                  );
-                                                }).toList(),
-                                                underline:
-                                                    const SizedBox.shrink(),
+                                                child: Text(
+                                                  adjustCustomerName(
+                                                      defaultCustomer),
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.black,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ],

@@ -82,7 +82,7 @@ class _ItemsPageState extends State<ItemsPage> {
     return parts.reversed.join('-');
   }
 
-  Future getCustomerList() async {
+  void getCustomerList() async {
     customers = await _dbhelper.getCustomers('customer_master');
   }
 
@@ -181,13 +181,13 @@ class _ItemsPageState extends State<ItemsPage> {
   @override
   void initState() {
     super.initState();
-
-    Future.delayed(const Duration(seconds: 1), () {
+    getCustomerList();
+    _loadUnits();
+    /* Future.delayed(const Duration(seconds: 1), () {
       setState(() {
-        _loadUnits();
-        getCustomerList();
+        
       });
-    });
+    }); */
   }
 
   @override
@@ -259,13 +259,7 @@ class _ItemsPageState extends State<ItemsPage> {
                                       child: TextButton(
                                         onPressed: () {
                                           setState(() {
-                                            if (_ordersFilter ==
-                                                'bill_number DESC') {
-                                              _ordersFilter = 'bill_number ASC';
-                                            } else {
-                                              _ordersFilter =
-                                                  'bill_number DESC';
-                                            }
+                                              _ordersFilter = 'bill_number DESC';
                                           });
                                         },
                                         child: Text(
