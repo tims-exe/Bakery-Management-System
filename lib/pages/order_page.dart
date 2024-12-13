@@ -485,7 +485,7 @@ class _OrderPageState extends State<OrderPage> {
     advancePaidFieldController.text = currentBill['advance_paid'].toString();
     finalPaymentFieldController.text = currentBill['final_payment'].toString();
     discountFieldController.text = currentBill['discount_amount'].toString();
-    mobileNumberFieldController.text = upiNo!;
+    mobileNumberFieldController.text = mobileNo!;
 
     getNextBillNumber();
     Future.delayed(const Duration(seconds: 1), () {
@@ -544,10 +544,8 @@ class _OrderPageState extends State<OrderPage> {
                     children: [
                       TextButton(
                         onPressed: () {
-                          if (getMobileNumber(currentBill['customer_id']) !=
-                              '') {
-                            mobileNumberFieldController.text =
-                                getMobileNumber(currentBill['customer_id']);
+                          if (getMobileNumber(currentBill['customer_id']) != '') {
+                            mobileNumberFieldController.text = getMobileNumber(currentBill['customer_id']);
                           }
                           showDialog(
                             context: context,
@@ -555,7 +553,7 @@ class _OrderPageState extends State<OrderPage> {
                               return AlertDialog(
                                 backgroundColor: Colors.white,
                                 title: const Text(
-                                  'Send Invoice in WhatsApp',
+                                  'Save and Send Invoice',
                                   textAlign: TextAlign.center,
                                 ),
                                 content: TextField(
@@ -628,14 +626,7 @@ class _OrderPageState extends State<OrderPage> {
                                         textColor: Colors.white,
                                         fontSize: 20,
                                       );
-                                      if (mobileNumberFieldController
-                                              .text.length ==
-                                          10) {
-                                        sendWhatsAppMessage(
-                                            mobileNumberFieldController.text,
-                                            getWhatsAppMessage(
-                                                orderHeader, orderDetails));
-                                      }
+                                      sendWhatsAppMessage(mobileNumberFieldController.text,getWhatsAppMessage(orderHeader, orderDetails));
                                       Navigator.pushNamed(context, '/homepage');
                                     },
                                     child: const Text('Yes'),
@@ -1175,7 +1166,7 @@ class _OrderPageState extends State<OrderPage> {
                                         //color: Colors.amber,
                                         child: Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                              MainAxisAlignment.start,
                                           children: [
                                             Container(
                                               //color: Colors.amber,
@@ -1215,6 +1206,7 @@ class _OrderPageState extends State<OrderPage> {
                                                               defaultCustomerID =
                                                                   getCustomerID(
                                                                       selectedCustomerIndex);
+                                                              currentBill['customer_id'] = defaultCustomerID;
                                                               //print(defaultCustomerID);
                                                             });
                                                           },

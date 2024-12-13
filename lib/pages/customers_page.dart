@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nissy_bakes_app/database/dbhelper.dart';
-
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../components/search_customer.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 
 class CustomersPage extends StatefulWidget {
   const CustomersPage({super.key});
@@ -33,6 +34,8 @@ class _CustomersPageState extends State<CustomersPage> {
   TextEditingController address = TextEditingController();
   TextEditingController phone = TextEditingController();
   TextEditingController balance = TextEditingController(text: '0');
+  var phoneNumberDialCode = "+91";
+  PhoneNumber phoneNumberIsoCode = PhoneNumber(isoCode: 'IN');
 
   final Color _orange = const Color.fromRGBO(230, 84, 0, 1);
   final Color _lightOrange = const Color.fromRGBO(255, 168, 120, 1);
@@ -169,6 +172,7 @@ class _CustomersPageState extends State<CustomersPage> {
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -339,8 +343,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                                   Icons.phone,
                                                   size: 20,
                                                 ),
-                                                Text(
-                                                    '  :  ${customer['customer_phone']}')
+                                                Text('  :  ${customer['customer_phone']}')
                                               ],
                                             )
                                           else
@@ -358,18 +361,25 @@ class _CustomersPageState extends State<CustomersPage> {
                                       onTap: () {
                                         setState(() {
                                           _isEdit = true;
-                                          currentCustomerID =
-                                              customer['customer_id'];
+                                          List<String> currentPhoneNumber = customer['customer_phone'].split(' ');
+                                          String currentIsoCode =  PhoneNumber.getISO2CodeByPrefix('+91')!;
+                                          if (currentPhoneNumber.length >= 2 && currentPhoneNumber[0][0] == '+'){
+                                            currentIsoCode =  PhoneNumber.getISO2CodeByPrefix(currentPhoneNumber[0])!;
+                                            phone.text = currentPhoneNumber.sublist(1).join(' ');
+                                          }
+                                          else{
+                                            phone.text = customer['customer_phone'];
+                                          }
+                                          
+                                          //String num = PhoneNumber.getISO2CodeByPrefix("+91")!;
+                                          phoneNumberIsoCode = PhoneNumber(isoCode: currentIsoCode);
+                                          print('*#*#*#  $phoneNumberIsoCode');
+                                          currentCustomerID = customer['customer_id'];
                                           name.text = customer['customer_name'];
-                                          reference.text =
-                                              customer['reference'];
-                                          address.text =
-                                              customer['customer_address'];
-                                          phone.text =
-                                              customer['customer_phone'];
-                                          balance.text =
-                                              customer['customer_balance']
-                                                  .toString();
+                                          reference.text = customer['reference'];
+                                          address.text = customer['customer_address'];
+                                          //phone.text = currentPhoneNumber[1];
+                                          balance.text = customer['customer_balance'].toString();
                                         });
                                       },
                                     ),
@@ -555,6 +565,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                 const SizedBox(
                                   height: 20,
                                 ),
+                                //\\
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -565,7 +576,75 @@ class _CustomersPageState extends State<CustomersPage> {
                                     ),
                                     SizedBox(
                                       width: 250,
-                                      child: TextField(
+                                      child: InternationalPhoneNumberInput(
+                                        onInputChanged: (value) {
+                                          print(value.dialCode);
+                                          if (value.dialCode != null){
+                                            phoneNumberDialCode = value.dialCode!;
+                                          } 
+                                          else{
+                                            phoneNumberDialCode = '+91';
+                                          }
+                                        },
+                                        initialValue: phoneNumberIsoCode,
+                                        selectorConfig: const SelectorConfig(
+                                          selectorType: PhoneInputSelectorType.DIALOG,
+                                          useBottomSheetSafeArea: true,
+                                        ),
+                                        ignoreBlank: false,
+                                        textFieldController: phone,
+                                        formatInput: true,
+                                        keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
+                                        inputDecoration: InputDecoration(
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: _orange),
+                                          ),
+                                        ),
+                                        onSaved: (PhoneNumber number) {
+                                          print('On Saved: $number, ${phone.text}');
+                                        },
+                                        onFieldSubmitted: (value) {
+                                          print('*********************$phoneNumberIsoCode');
+                                          /* print('submitted');
+                                          String ph = "+91 9495669555";
+                                          String num = PhoneNumber.getISO2CodeByPrefix("+91")!;
+                                          print(num); */
+                                        },
+                                      )
+                                      
+                                      /* IntlPhoneField(
+                                        controller: phone,
+                                        keyboardType: TextInputType.phone,
+                                        decoration: InputDecoration(
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: _orange),
+                                          ),
+                                        ),
+                                        initialCountryCode: 'IN',
+                                        onChanged: (value) {
+                                          print(value.completeNumber);
+                                          phoneNumber = value.completeNumber;
+                                        },
+                                        onSubmitted: (newValue) {
+                                          print(phone.text);
+                                        },
+                                      ) */
+                                      
+                                      /* TextField(
                                         controller: phone,
                                         keyboardType: TextInputType
                                             .number, // Only shows number keypad
@@ -588,7 +667,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                           ),
                                           hintText: '...',
                                         ),
-                                      ),
+                                      ), */
                                     )
                                   ],
                                 ),
@@ -667,31 +746,24 @@ class _CustomersPageState extends State<CustomersPage> {
                                   child: MaterialButton(
                                     onPressed: () {
                                       print(currentCustomerID);
-                                      if (name.text != '' &&
-                                          balance.text != '') {
-                                        currentCustomer['customer_name'] =
-                                            name.text;
-                                        currentCustomer['reference'] =
-                                            reference.text;
-                                        currentCustomer['customer_address'] =
-                                            address.text;
-                                        currentCustomer['customer_phone'] =
-                                            phone.text;
-                                        currentCustomer['customer_balance'] =
-                                            num.parse(balance.text);
-                                        if (currentCustomer['customer_phone']
-                                                    .length !=
-                                                10 &&
-                                            currentCustomer['customer_phone'] !=
-                                                '') {
-                                          showWarning('Invalid Phone Number');
-                                        } else {
-                                          if (_isEdit) {
+                                      if (name.text != '' && balance.text != '') {
+                                        currentCustomer['customer_name'] = name.text;
+                                        currentCustomer['reference'] = reference.text;
+                                        currentCustomer['customer_address'] = address.text;
+                                        currentCustomer['customer_balance'] = num.parse(balance.text);
+                                        if (phone.text.isNotEmpty){
+                                          currentCustomer['customer_phone'] = '$phoneNumberDialCode ${phone.text}';
+                                        }
+                                        else{
+                                          currentCustomer['customer_phone'] = phone.text;
+                                        }
+                                        print(currentCustomer['customer_phone']);
+                                        print(phoneNumberDialCode);
+                                        if (_isEdit) {
                                             editCustomer();
                                           } else {
                                             addNewCustomer();
                                           }
-                                        }
                                       } else {
                                         showWarning('Enter Customer');
                                       }
