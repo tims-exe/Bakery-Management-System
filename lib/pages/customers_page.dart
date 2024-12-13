@@ -218,20 +218,25 @@ class _CustomersPageState extends State<CustomersPage> {
                               getCustomerID: currentCustomerID,
                               onSave: (updatedCustomer, updatedCustomerID) {
                                 setState(
+                                  ///\\\
                                   () {
                                     currentCustomer = updatedCustomer;
                                     currentCustomerID = updatedCustomerID;
-                                    name.text =
-                                        currentCustomer['customer_name'];
-                                    reference.text =
-                                        currentCustomer['reference'];
-                                    address.text =
-                                        currentCustomer['customer_address'];
-                                    phone.text =
-                                        currentCustomer['customer_phone'];
-                                    balance.text =
-                                        currentCustomer['customer_balance']
-                                            .toString();
+
+                                    List<String> currentPhoneNumber = currentCustomer['customer_phone'].split(' ');
+                                    String currentIsoCode =  PhoneNumber.getISO2CodeByPrefix('+91')!;
+                                    if (currentPhoneNumber.length >= 2 && currentPhoneNumber[0][0] == '+'){
+                                      currentIsoCode =  PhoneNumber.getISO2CodeByPrefix(currentPhoneNumber[0])!;
+                                      phone.text = currentPhoneNumber.sublist(1).join(' ');
+                                    }
+                                    else{
+                                      phone.text = currentCustomer['customer_phone'];
+                                    }
+                                    phoneNumberIsoCode = PhoneNumber(isoCode: currentIsoCode);
+                                    name.text = currentCustomer['customer_name'];
+                                    reference.text = currentCustomer['reference'];
+                                    address.text = currentCustomer['customer_address'];
+                                    balance.text = currentCustomer['customer_balance'].toString();
                                     _isEdit = true;
                                   },
                                 );

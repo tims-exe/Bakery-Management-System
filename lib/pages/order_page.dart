@@ -355,8 +355,12 @@ class _OrderPageState extends State<OrderPage> {
   }
 
   void sendWhatsAppMessage(String phoneNumber, String message) async {
+    String formattedPhoneNumber = '+91$phoneNumber';
+    if (phoneNumber.split(' ').where((number) => number.isNotEmpty).length > 1){
+      formattedPhoneNumber = phoneNumber.replaceAll(' ', '').substring(1);
+    } 
     final Uri whatsappUrl = Uri.parse(
-        'https://wa.me/91$phoneNumber?text=${Uri.encodeComponent(message)}');
+        'https://wa.me/$formattedPhoneNumber?text=${Uri.encodeComponent(message)}');
     print(whatsappUrl);
     try {
       if (await canLaunchUrl(whatsappUrl)) {
@@ -546,6 +550,9 @@ class _OrderPageState extends State<OrderPage> {
                         onPressed: () {
                           if (getMobileNumber(currentBill['customer_id']) != '') {
                             mobileNumberFieldController.text = getMobileNumber(currentBill['customer_id']);
+                          }
+                          else{
+                            mobileNumberFieldController.text = mobileNo!;
                           }
                           showDialog(
                             context: context,
