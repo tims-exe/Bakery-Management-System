@@ -28,7 +28,7 @@ class _ItemsPageState extends State<ItemsPage> {
   String currentCustomer = 'All Customers';
   int currentCustomerId = 0;
 
-  String _ordersFilter = 'bill_number DESC';
+  String _ordersFilter = 'delivery_date DESC';
 
   //final Map<String, dynamic> _currentBill = {};
   List<Map<String, dynamic>> _currentOrder = [];
