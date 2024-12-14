@@ -392,12 +392,15 @@ class _OrderPageState extends State<OrderPage> {
       String formula = _getPrintFormula(items['sell_unit_id']);
       print(formula);
       if (formula == 'num_x_sellqnty') {
+        // (number of items * sell qnty) name
         invoiceItems =
             '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
       } else if (formula == 'num_x_sellqnty_unit') {
+        // 
         invoiceItems =
             '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} (${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
       } else {
+        // num  name (sellqnty sellunit)
         invoiceItems =
             '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
       }
@@ -472,6 +475,19 @@ class _OrderPageState extends State<OrderPage> {
     return name.length > 30 ? '${name.substring(0, 25)}...' : name;
   }
 
+  void checkProduced(){
+    if (_isEdit){
+      bool p = true;
+      for (int i = 0; i < currentOrder.length; i++){
+        print(currentOrder[i]['produced']);
+        if (currentOrder[i]['produced'] == 0){
+          p = false;
+        }
+      }
+      currentBill['produced'] = p;
+    }
+  }
+
   // initial state
   @override
   void initState() {
@@ -484,6 +500,8 @@ class _OrderPageState extends State<OrderPage> {
 
     var total = getTotalAmount(currentOrder);
     currentBill['total_amount'] = total;
+
+    checkProduced();
     //currentBill['advance_paid'] = num.parse(currentBill['advance_paid']);
 
     /* if (currentBill['payment_done'] == true) {

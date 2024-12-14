@@ -87,6 +87,32 @@ class DbHelper {
     return unit[0]['unit_name'];
   }
 
+  Future<String> getUnitFormula(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> unit =  await db.rawQuery('SELECT print_formula FROM unit_master WHERE unit_id = $id');
+    return unit[0]['print_formula'];
+  }
+
+  Future<int> updateProducedItem(String id, String sellqnty, String sellUnitId, startTime, endTime) async {
+    final db = await database;
+    return await db.rawUpdate('''
+      UPDATE order_details
+      SET produced = 1
+      WHERE EXISTS (
+        SELECT 1
+        FROM order_header
+        WHERE order_details.bill_number_type = order_header.bill_number_type
+          AND order_details.bill_number_financial_year = order_header.bill_number_financial_year
+          AND order_details.bill_number = order_header.bill_number
+          AND order_header.delivery_time >= ?
+          AND order_header.delivery_time <= ?
+      )
+      AND item_id = ?
+      AND sell_quantity = ?
+      AND sell_unit_id = ?;
+    ''', [startTime, endTime, id, sellqnty, sellUnitId]);
+  }
+
   // fetch units
   Future<List<Map<String, dynamic>>> getUnits(String tablename) async {
     final db = await database;

@@ -102,13 +102,13 @@ class _ProductionPageState extends State<ProductionPage> {
     if (_filter == 'all'){
       // select * from order_header where produced = 0 and delivery_time
       if (productionTime == 'morning'){
-        orderHeader = await _dbhelper.getOrderHeaderProduction('order_header', ['produced = ?', 'delivery_time <= ?'], ['0', '11:00:00']);
+        orderHeader = await _dbhelper.getOrderHeaderProduction('order_header', ['delivery_time <= ?'], ['11:00:00']);
       }
       else if (productionTime == 'afternoon'){
-        orderHeader = await _dbhelper.getOrderHeaderProduction('order_header', ['produced = ?', 'delivery_time > ?', 'delivery_time <= ?'], ['0', '11:00:00', '15:00:00']);
+        orderHeader = await _dbhelper.getOrderHeaderProduction('order_header', ['delivery_time > ?', 'delivery_time <= ?'], ['11:00:00', '15:00:00']);
       }
       else {
-        orderHeader = await _dbhelper.getOrderHeaderProduction('order_header', ['produced = ?', 'delivery_time > ?'], ['0', '15:00:00']);
+        orderHeader = await _dbhelper.getOrderHeaderProduction('order_header', ['delivery_time > ?'], ['15:00:00']);
       }
     }
     // add other filters for today, tomorrow, specific date
@@ -119,13 +119,19 @@ class _ProductionPageState extends State<ProductionPage> {
       'bill_number_type = ?',
       'bill_number_financial_year = ?',
       'bill_number = ?',
+      'produced = ?',
     ];
     
     for (int i = 0; i < orderHeader.length; i++){
+
+      String orderDate = orderHeader[i]['delivery_date'];
+      String orderTime = orderHeader[i]['delivery_time'];
+
       List<dynamic> conditionArgs = [
         orderHeader[i]['bill_number_type'],
         orderHeader[i]['bill_number_financial_year'],
         orderHeader[i]['bill_number'],
+        0,
       ];
       orderDetails = await _dbhelper.getOrderItems('order_details', conditions, conditionArgs);
       productionList = productionList + orderDetails;
@@ -135,6 +141,7 @@ class _ProductionPageState extends State<ProductionPage> {
 
       for (int j = 0; j < orderDetails.length; j++){
         String sellUnit = await _dbhelper.getUnitName(orderDetails[j]['sell_unit_id']);
+        String itemName = await _dbhelper.getItemName(orderDetails[j]['item_id']);
         //bool check = productionItems.any((map) => map['item_id'] == targetItemId);
         if (
           productionItems.any((map) => map['item_id'] == orderDetails[j]['item_id']) &&
@@ -142,33 +149,89 @@ class _ProductionPageState extends State<ProductionPage> {
           productionItems.any((map) => map['sell_weight'] == orderDetails[j]['sell_quantity'])
         ){
           for (var map in productionItems) {
-            if (map['item_id'] == orderDetails[j]['item_id']) {
+            if (
+              map['item_id'] == orderDetails[j]['item_id'] &&
+              map['sell_unit'] == sellUnit &&
+              map['sell_weight'] == orderDetails[j]['sell_quantity']
+            ) {
               map['quantity'] += orderDetails[j]['number_of_items'];
               map['produced'] = orderDetails[j]['produced'];
+
+              if (map['formula'] == 'num_x_sellqnty'){
+                map['display'] = '${(map['quantity'] * orderDetails[j]['sell_quantity'])} $itemName';
+              }
+              else if (map['formula'] == 'num_item_sellqnty'){
+                map['display'] = '${map['quantity']} $itemName (${orderDetails[j]['sell_quantity']} $sellUnit)';
+              }
+              else{
+                map['display'] = '${(map['quantity'] * orderDetails[j]['sell_quantity'])} $itemName ($sellUnit)';
+              }
             }
           }
         }
         else {
-          String itemName = await _dbhelper.getItemName(orderDetails[j]['item_id']);
           sellUnit = await _dbhelper.getUnitName(orderDetails[j]['sell_unit_id']);
+          String unitFormula = await _dbhelper.getUnitFormula(orderDetails[j]['sell_unit_id']);
+          String displayText = '';
+
+          if (unitFormula == 'num_x_sellqnty'){
+            displayText = '${(orderDetails[j]['number_of_items'] * orderDetails[j]['sell_quantity'])} $itemName';
+          }
+          else if (unitFormula == 'num_item_sellqnty'){
+            displayText = '${orderDetails[j]['number_of_items']} $itemName (${orderDetails[j]['sell_quantity']} $sellUnit)';
+          }
+          else{
+            displayText = '${(orderDetails[j]['number_of_items'] * orderDetails[j]['sell_quantity'])} $itemName ($sellUnit)';
+          }
+
+
           productionItems.add({
             'item_id': orderDetails[j]['item_id'],
             'item_name': itemName,
             'sell_unit' : sellUnit,
+            'sell_unit_id': orderDetails[j]['sell_unit_id'],
             'sell_weight': orderDetails[j]['sell_quantity'],
             'quantity' : orderDetails[j]['number_of_items'],
             'produced': orderDetails[j]['produced'],
+            'time': productionTime,
+            'date': orderDate,
+            'formula': unitFormula,
+            'display' : displayText,
           });
         }
       }
     }
 
-    print('*********');
+    /* print('*********');
     for (int i = 0; i < productionItems.length; i++){
       print(productionItems[i]);
-    }
+    } */
 
     return productionItems;
+  }
+
+  void handleCheckBox(Map<String, dynamic> item) async {
+    String startTime = '';
+    String endTime = '';
+    if (_filter == 'all'){
+      if (item['time'] == 'morning'){
+        startTime = '00:00:00';
+        endTime = '11:00:00';
+      }
+      else if (item['time'] == 'afternoon') {
+        startTime = '11:00:01';
+        endTime = '15:00:00';
+      }
+      else {
+        startTime = '15:00:01';
+        endTime = '23:59:59';
+      }
+    }
+
+    await _dbhelper.updateProducedItem(item['item_id'].toString(), item['sell_weight'].toString(), item['sell_unit_id'].toString(), startTime, endTime);
+    
+    // for all the other filters specify the date as well
+    setState(() {});
   }
 
   @override
@@ -220,14 +283,30 @@ class _ProductionPageState extends State<ProductionPage> {
                     Expanded(
                       child: Column(
                         children: [
-                          const Text('Morning'),
-                          const SizedBox(height: 20,),
+                          const Column(
+                            children: [
+                              Text(
+                                'Morning',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600
+                                ),
+                              ),
+                              Text(
+                                '(Till 11am)',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                ),
+                              )
+                            ],
+                          ),
+                          const SizedBox(height: 15,),
 
                           // Divider
                           Divider(
                             thickness: 1,
                             color: _grey,
-                            height: 20, // Space above and below the line
+                            height: 5, // Space above and below the line
                             indent: 20,
                             endIndent: 20,
                           ),
@@ -265,27 +344,24 @@ class _ProductionPageState extends State<ProductionPage> {
                                         padding: const EdgeInsets.only(bottom: 0),
                                         child: ListTile(
                                           title: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Container(
-                                                //color: Colors.amber,
-                                                width: 100,
-                                                child: Text(item['item_name']),
-                                              ),
-                                              Container(
-                                                color: Colors.amber,
-                                                width: 80,
-                                                child: Text('${item['sell_weight']} ${item['sell_unit']}'),
-                                              ),
-                                              Container(
-                                                width: 60,
-                                                color: Colors.red,
-                                                child: Text(item['quantity'].toString()),
+                                              SizedBox(
+                                                width: 300,
+                                                child: Text(
+                                                  item['display'], 
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
                                               ),
                                               Icon(Icons.check_box_outline_blank)
                                             ],
                                           ),
                                           onTap: () {
-                                            print(item);
+                                            if (item['produced'] == 0) {
+                                              handleCheckBox(item);
+                                            }
                                           },
                                         ),
                                       );
@@ -307,14 +383,30 @@ class _ProductionPageState extends State<ProductionPage> {
                     Expanded(
                       child: Column(
                         children: [
-                          const Text('Afternoon'),
-                          const SizedBox(height: 20,),
+                          const Column(
+                            children: [
+                              Text(
+                                'Afternoon',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600
+                                ),
+                              ),
+                              Text(
+                                '(11am to 3pm)',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                ),
+                              )
+                            ],
+                          ),
+                          const SizedBox(height: 15,),
 
                           // Divider
                           Divider(
                             thickness: 1,
                             color: _grey,
-                            height: 20, // Space above and below the line
+                            height: 5, // Space above and below the line
                             indent: 20,
                             endIndent: 20,
                           ),
@@ -352,11 +444,25 @@ class _ProductionPageState extends State<ProductionPage> {
                                         padding: const EdgeInsets.only(bottom: 0),
                                         child: ListTile(
                                           title: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Text(item['item_name'].toString()),
-                                              Text(item['produced'].toString()),
+                                              SizedBox(
+                                                width: 300,
+                                                child: Text(
+                                                  item['display'], 
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                              Icon(Icons.check_box_outline_blank)
                                             ],
                                           ),
+                                          onTap: () {
+                                            if (item['produced'] == 0) {
+                                              handleCheckBox(item);
+                                            }
+                                          },
                                         ),
                                       );
                                     },
@@ -377,14 +483,30 @@ class _ProductionPageState extends State<ProductionPage> {
                     Expanded(
                       child: Column(
                         children: [
-                          const Text('Morning'),
-                          const SizedBox(height: 20,),
+                          const Column(
+                            children: [
+                              Text(
+                                'Evening',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600
+                                ),
+                              ),
+                              Text(
+                                '(After 3pm)',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                ),
+                              )
+                            ],
+                          ),
+                          const SizedBox(height: 15,),
 
                           // Divider
                           Divider(
                             thickness: 1,
                             color: _grey,
-                            height: 20, // Space above and below the line
+                            height: 5, // Space above and below the line
                             indent: 20,
                             endIndent: 20,
                           ),
@@ -421,12 +543,42 @@ class _ProductionPageState extends State<ProductionPage> {
                                       return Padding(
                                         padding: const EdgeInsets.only(bottom: 0),
                                         child: ListTile(
-                                          title: Row(
+                                          title: item['produced'] == 0 ?
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                SizedBox(
+                                                  width: 300,
+                                                  child: Text(
+                                                    item['display'], 
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Icon(Icons.check_box_outline_blank)
+                                              ],
+                                            ) :
+                                            Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Text(item['item_name'].toString()),
-                                              Text(item['produced'].toString()),
+                                              SizedBox(
+                                                width: 300,
+                                                child: Text(
+                                                  item['display'], 
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                              Icon(Icons.check_box, color: _orange,)
                                             ],
                                           ),
+                                          onTap: () {
+                                            if (item['produced'] == 0) {
+                                              handleCheckBox(item);
+                                            }
+                                          },
                                         ),
                                       );
                                     },

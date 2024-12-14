@@ -174,6 +174,7 @@ class _ItemsPageState extends State<ItemsPage> {
         'sell_unit_id': item['sell_unit_id'],
         'conversion': item['base_quantity'],
         'sell_rate': item['sell_rate'],
+        'produced': item['produced'],
       });
     }
   }
