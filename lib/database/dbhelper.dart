@@ -75,6 +75,18 @@ class DbHelper {
     );
   }
 
+  Future<String> getItemName(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> item =  await db.rawQuery('SELECT item_name FROM item_master WHERE item_id = $id');
+    return item[0]['item_name'];
+  }
+
+  Future<String> getUnitName(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> unit =  await db.rawQuery('SELECT unit_name FROM unit_master WHERE unit_id = $id');
+    return unit[0]['unit_name'];
+  }
+
   // fetch units
   Future<List<Map<String, dynamic>>> getUnits(String tablename) async {
     final db = await database;
@@ -148,6 +160,21 @@ class DbHelper {
     return await db.query(tablename, orderBy: filter);
   }
 
+
+  // 2 conditions
+  // order headers where time <= time specified and date = date specified and produced = 0
+  // all order headers where time <= time specified and produced = 0
+  Future<List<Map<String, dynamic>>> getOrderHeaderProduction(String tableName, List<String> condition, List<dynamic>? args) async {
+    final db = await database;
+    final whereClause = condition.join(' AND ');
+    return await db.query(
+      tableName,
+      where: whereClause,
+      whereArgs: args,
+    );
+  }
+
+
   // fetch order header
   Future<List<Map<String, dynamic>>> getOrderHeaderCustomer(
       String tablename, int customerId) async {
@@ -161,9 +188,7 @@ class DbHelper {
   }
 
   // fetch order items based on order id
-  Future<List<Map<String, dynamic>>> getOrderItems(
-      String tableName, List<String> conditions,
-      [List<dynamic>? conditionArgs]) async {
+  Future<List<Map<String, dynamic>>> getOrderItems(String tableName, List<String> conditions, [List<dynamic>? conditionArgs]) async {
     final db = await database;
     final whereClause = conditions.join(' AND ');
     return await db.query(
