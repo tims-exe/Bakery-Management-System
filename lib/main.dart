@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:nissy_bakes_app/pages/delivery_page.dart';
 import 'package:nissy_bakes_app/pages/home_page.dart';
 import 'package:flutter/services.dart';
 import 'package:nissy_bakes_app/pages/items_page.dart';
@@ -35,6 +36,7 @@ class MyApp extends StatelessWidget {
         '/itemspage': (context) => const ItemsPage(),
         '/productionpage': (context) => const ProductionPage(),
         '/customers' : (context) => const CustomersPage(),
+        '/deliverypage': (context) => const DeliveryPage(),
       },
     );
   }

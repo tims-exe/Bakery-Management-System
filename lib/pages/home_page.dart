@@ -518,6 +518,7 @@ class _HomePageState extends State<HomePage> {
 
                 // Bottom Nav Bar
                 Container(
+                  padding: const EdgeInsets.only(left: 5),
                   height: 75,
                   width: MediaQuery.of(context).size.width,
                   decoration: BoxDecoration(
@@ -525,53 +526,83 @@ class _HomePageState extends State<HomePage> {
                     color: Colors.white,
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 16),
-                        child: MaterialButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/itemspage');
-                          },
-                          elevation: 0,
-                          hoverElevation: 0,
-                          hoverColor: const Color.fromRGBO(214, 214, 214, 1),
-                          child: const Icon(
-                            Icons.menu_book,
-                            color: Colors.black,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16),
-                        child: MaterialButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/productionpage');
-                          },
-                          elevation: 0,
-                          hoverElevation: 0,
-                          hoverColor: const Color.fromRGBO(214, 214, 214, 1),
-                          child: const Icon(
-                            Icons.today,
-                            color: Colors.black,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16),
-                        child: Builder(
-                          builder: (context) => MaterialButton(
+                        padding: const EdgeInsets.only(left: 0),
+                        child: SizedBox(
+                          width: 70,
+                          child: MaterialButton(
+                            //color: Colors.amber,
                             onPressed: () {
-                              Scaffold.of(context).openEndDrawer();
+                              Navigator.pushNamed(context, '/itemspage');
                             },
                             elevation: 0,
                             hoverElevation: 0,
                             hoverColor: const Color.fromRGBO(214, 214, 214, 1),
                             child: const Icon(
-                              Icons.settings,
+                              Icons.menu_book,
                               color: Colors.black,
                               size: 32,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 0),
+                        child: SizedBox(
+                          width: 70,
+                          child: MaterialButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/productionpage');
+                            },
+                            elevation: 0,
+                            hoverElevation: 0,
+                            hoverColor: const Color.fromRGBO(214, 214, 214, 1),
+                            child: const Icon(
+                              Icons.restaurant_menu,
+                              color: Colors.black,
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 0),
+                        child: SizedBox(
+                          width: 70,
+                          child: MaterialButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/deliverypage');
+                            },
+                            elevation: 0,
+                            hoverElevation: 0,
+                            hoverColor: const Color.fromRGBO(214, 214, 214, 1),
+                            child: const Icon(
+                              Icons.today,
+                              color: Colors.black,
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 0),
+                        child: SizedBox(
+                          width: 70,
+                          child: Builder(
+                            builder: (context) => MaterialButton(
+                              onPressed: () {
+                                Scaffold.of(context).openEndDrawer();
+                              },
+                              elevation: 0,
+                              hoverElevation: 0,
+                              hoverColor: const Color.fromRGBO(214, 214, 214, 1),
+                              child: const Icon(
+                                Icons.settings,
+                                color: Colors.black,
+                                size: 32,
+                              ),
                             ),
                           ),
                         ),
