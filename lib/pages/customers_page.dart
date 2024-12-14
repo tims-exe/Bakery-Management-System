@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nissy_bakes_app/database/dbhelper.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
 import '../components/search_customer.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 

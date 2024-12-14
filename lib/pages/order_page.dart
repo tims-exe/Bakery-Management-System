@@ -57,7 +57,7 @@ class _OrderPageState extends State<OrderPage> {
   int billNumber = 0;
 
   bool _isEdit = false;
-  bool _isPaid = false;
+  //bool _isPaid = false;
 
   String defaultCustomer = 'Guest';
   int defaultCustomerID = 1;
@@ -271,6 +271,13 @@ class _OrderPageState extends State<OrderPage> {
     details['sell_quantity'] = item['sell_qnty'];
     details['sell_unit_id'] = item['sell_unit_id'];
     details['sell_rate'] = item['sell_rate'];
+    if (currentBill['produced']){
+      details['produced'] = 1;
+    }
+    else{
+      details['produced'] = 0;
+    }
+    print(details['produced']);
     details['modified_datetime'] =
         '${modifiedDateTime.year}-${modifiedDateTime.month}-${modifiedDateTime.day} ${modifiedDateTime.hour}:${modifiedDateTime.minute}:${modifiedDateTime.second}';
 
