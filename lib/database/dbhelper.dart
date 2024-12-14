@@ -112,6 +112,27 @@ class DbHelper {
       AND sell_unit_id = ?;
     ''', [startTime, endTime, id, sellqnty, sellUnitId]);
   }
+  
+  Future<int> updateProducedItemDate(String id, String sellqnty, String sellUnitId, String startTime, String endTime, String date) async {
+    final db = await database;
+    return await db.rawUpdate('''
+      UPDATE order_details
+      SET produced = 1
+      WHERE EXISTS (
+        SELECT 1
+        FROM order_header
+        WHERE order_details.bill_number_type = order_header.bill_number_type
+          AND order_details.bill_number_financial_year = order_header.bill_number_financial_year
+          AND order_details.bill_number = order_header.bill_number
+          AND order_header.delivery_time >= ?
+          AND order_header.delivery_time <= ?
+          AND order_header.delivery_date = ?
+      )
+      AND item_id = ?
+      AND sell_quantity = ?
+      AND sell_unit_id = ?;
+    ''', [startTime, endTime, date, id, sellqnty, sellUnitId]);
+  }
 
   // fetch units
   Future<List<Map<String, dynamic>>> getUnits(String tablename) async {
