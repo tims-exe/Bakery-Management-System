@@ -63,7 +63,11 @@ class _SearchItemState extends State<SearchItem> {
   }
 
   bool checkCurrentOrder(Map item) {
-    if (currentOrder.any((index) => index['item'] == item['item_name'])) {
+    if (
+      currentOrder.any((index) => index['item'] == item['item_name']) &&
+      currentOrder.any((index) => index['sell_unit_id'] == item['sell_unit_id']) && 
+      currentOrder.any((index) => index['sell_qnty'] == item['sell_quantity'])
+    ) {
       return false;
     } else {
       return true;
@@ -72,7 +76,11 @@ class _SearchItemState extends State<SearchItem> {
 
   void updateCurrentOrderNo(Map item) {
     for (int i = 0; i < currentOrder.length; i++) {
-      if (currentOrder[i]['item'] == item['item_name']) {
+      if (
+        currentOrder[i]['item'] == item['item_name'] && 
+        currentOrder[i]['sell_unit_id'] == item['sell_unit_id'] &&
+        currentOrder[i]['sell_qnty'] == item['sell_quantity']
+      ) {
         currentOrder[i]['no']++;
       }
     }
