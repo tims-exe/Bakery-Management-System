@@ -119,8 +119,8 @@ class _ProductionPageState extends State<ProductionPage> {
 
     if (_filter == 'All') {
       // select * from order_header where produced = 0 and delivery_time
-      orderHeader = await _dbhelper.getOrderHeaderProduction('order_header',
-          ['delivery_time >= ?', 'delivery_time <= ?'], [startTime, endTime]);
+      orderHeader = await _dbhelper.getOrderHeaderCondition('order_header',
+          ['delivery_time >= ?', 'delivery_time <= ?'], [startTime, endTime], false);
     } else {
       /* if (_filter == 'today'){
         _date = DateTime.now();
@@ -134,10 +134,10 @@ class _ProductionPageState extends State<ProductionPage> {
       currentDate =
           '${_date.year.toString().padLeft(2, '0')}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
       print(currentDate);
-      orderHeader = await _dbhelper.getOrderHeaderProduction(
+      orderHeader = await _dbhelper.getOrderHeaderCondition(
           'order_header',
           ['delivery_time >= ?', 'delivery_time <= ?', 'delivery_date = ?'],
-          [startTime, endTime, currentDate]);
+          [startTime, endTime, currentDate], false);
     }
     // add other filters for today, tomorrow, specific date
 

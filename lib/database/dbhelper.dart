@@ -81,6 +81,12 @@ class DbHelper {
     return item[0]['item_name'];
   }
 
+  Future<String> getCustomerName(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> item =  await db.rawQuery('SELECT customer_name, reference FROM customer_master WHERE customer_id = $id');
+    return '${item[0]['customer_name']} (${item[0]['reference']})';
+  }
+
   Future<String> getUnitName(int id) async {
     final db = await database;
     List<Map<String, dynamic>> unit =  await db.rawQuery('SELECT unit_name FROM unit_master WHERE unit_id = $id');
@@ -189,6 +195,11 @@ class DbHelper {
     return await db.update('customer_master', customer, where: 'customer_id = ?', whereArgs: [customerID]);
   }
 
+  Future<int> updateOrderHeader(condition, value, billNumberType, billNumberFinancialYear, billNumber) async {
+    final db = await database;
+    return await db.rawUpdate('UPDATE order_header SET $condition = ? WHERE bill_number_type = ? AND bill_number_financial_year = ? AND bill_number = ?', [value, billNumberType, billNumberFinancialYear, billNumber]);
+  }
+
   //update order header
   Future<int> updateHeader(Map<String, dynamic> header, String whereClause,
       List<dynamic> whereArgs) async {
@@ -211,14 +222,24 @@ class DbHelper {
   // 2 conditions
   // order headers where time <= time specified and date = date specified and produced = 0
   // all order headers where time <= time specified and produced = 0
-  Future<List<Map<String, dynamic>>> getOrderHeaderProduction(String tableName, List<String> condition, List<dynamic>? args) async {
+  Future<List<Map<String, dynamic>>> getOrderHeaderCondition(String tableName, List<String> condition, List<dynamic>? args, bool sort) async {
     final db = await database;
     final whereClause = condition.join(' AND ');
-    return await db.query(
-      tableName,
-      where: whereClause,
-      whereArgs: args,
-    );
+    if (sort){
+      return await db.query(
+        tableName,
+        where: whereClause,
+        whereArgs: args,
+        orderBy: 'delivery_time ASC'
+      );
+    }
+    else{
+      return await db.query(
+        tableName,
+        where: whereClause,
+        whereArgs: args,
+      );
+    }
   }
 
 
