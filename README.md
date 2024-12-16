@@ -38,27 +38,3 @@ The **Bakery Management System** is an all-in-one solution designed to simplify 
 This project is used by:
 
 - Nissy Bakes
-
-
-
-### Dev ToDo
-
-- [x] setup application
-- [x] create home screen
-- [x] database
-- [x] connect database
-- [x] design home screen 
-- [x] manage current orders
-- [x] handle new order 
-- [x] save order
-- [x] search function for all items
-- [x] view orders
-- [x] unit convertion
-- [x] edit orders
-- [x] filter orders
-- [x] handling new customers
-- [x] editing current customers
-- [ ] handling items
-- [ ] production and delivery view
-- [ ] handle customer balance
-- [ ] refactor
