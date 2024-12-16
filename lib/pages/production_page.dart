@@ -412,7 +412,7 @@ class _ProductionPageState extends State<ProductionPage> {
                 height: 35, // Space above and below the line
               ),
             ),
-            Container(
+            SizedBox(
               height: 630,
               child: Row(
                 children: [
@@ -452,7 +452,7 @@ class _ProductionPageState extends State<ProductionPage> {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.only(
-                                left: 10, right: 15, top: 10),
+                                left: 10, right: 10, top: 10),
                             child: FutureBuilder<List<Map<String, dynamic>>>(
                               future: getProductionOrders('morning'),
                               builder: (context, snapshot) {
@@ -506,7 +506,7 @@ class _ProductionPageState extends State<ProductionPage> {
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
                                                 SizedBox(
-                                                  width: 300,
+                                                  width: 280,
                                                   child: Text(
                                                     item['display'],
                                                     style: const TextStyle(
@@ -514,14 +514,16 @@ class _ProductionPageState extends State<ProductionPage> {
                                                     ),
                                                   ),
                                                 ),
-                                                const Icon(Icons.check_box_outline_blank)
+                                                IconButton(
+                                                onPressed: () {
+                                                  if (item['produced'] == 0) {
+                                                    handleCheckBox(item);
+                                                  }
+                                                }, 
+                                                icon: const Icon(Icons.check_box_outline_blank),
+                                              ),
                                               ],
                                             ),
-                                            onTap: () {
-                                              if (item['produced'] == 0) {
-                                                handleCheckBox(item);
-                                              }
-                                            },
                                             ),
                                           ),
                                         ],
@@ -542,7 +544,7 @@ class _ProductionPageState extends State<ProductionPage> {
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               SizedBox(
-                                                width: 300,
+                                                width: 280,
                                                 child: Text(
                                                   item['display'],
                                                   style: const TextStyle(
@@ -550,14 +552,16 @@ class _ProductionPageState extends State<ProductionPage> {
                                                   ),
                                                 ),
                                               ),
-                                              Icon(Icons.check_box_outline_blank)
+                                              IconButton(
+                                                onPressed: () {
+                                                  if (item['produced'] == 0) {
+                                                    handleCheckBox(item);
+                                                  }
+                                                }, 
+                                                icon: const Icon(Icons.check_box_outline_blank),
+                                              ),
                                             ],
                                           ),
-                                          onTap: () {
-                                            if (item['produced'] == 0) {
-                                              handleCheckBox(item);
-                                            }
-                                          },
                                         ),
                                       );
                                     },
@@ -665,7 +669,7 @@ class _ProductionPageState extends State<ProductionPage> {
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
                                                 SizedBox(
-                                                  width: 300,
+                                                  width: 280,
                                                   child: Text(
                                                     item['display'],
                                                     style: const TextStyle(
@@ -673,14 +677,16 @@ class _ProductionPageState extends State<ProductionPage> {
                                                     ),
                                                   ),
                                                 ),
-                                                const Icon(Icons.check_box_outline_blank)
+                                                IconButton(
+                                                  onPressed: () {
+                                                    if (item['produced'] == 0) {
+                                                      handleCheckBox(item);
+                                                    }
+                                                  }, 
+                                                  icon: const Icon(Icons.check_box_outline_blank),
+                                                ),
                                               ],
                                             ),
-                                            onTap: () {
-                                              if (item['produced'] == 0) {
-                                                handleCheckBox(item);
-                                              }
-                                            },
                                             ),
                                           ),
                                         ],
@@ -701,7 +707,7 @@ class _ProductionPageState extends State<ProductionPage> {
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               SizedBox(
-                                                width: 300,
+                                                width: 280,
                                                 child: Text(
                                                   item['display'],
                                                   style: const TextStyle(
@@ -709,14 +715,16 @@ class _ProductionPageState extends State<ProductionPage> {
                                                   ),
                                                 ),
                                               ),
-                                              Icon(Icons.check_box_outline_blank)
+                                              IconButton(
+                                                onPressed: () {
+                                                  if (item['produced'] == 0) {
+                                                    handleCheckBox(item);
+                                                  }
+                                                }, 
+                                                icon: const Icon(Icons.check_box_outline_blank),
+                                              ),
                                             ],
                                           ),
-                                          onTap: () {
-                                            if (item['produced'] == 0) {
-                                              handleCheckBox(item);
-                                            }
-                                          },
                                         ),
                                       );
                                     },
@@ -824,7 +832,7 @@ class _ProductionPageState extends State<ProductionPage> {
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
                                                 SizedBox(
-                                                  width: 300,
+                                                  width: 280,
                                                   child: Text(
                                                     item['display'],
                                                     style: const TextStyle(
@@ -832,14 +840,16 @@ class _ProductionPageState extends State<ProductionPage> {
                                                     ),
                                                   ),
                                                 ),
-                                                const Icon(Icons.check_box_outline_blank)
+                                                IconButton(
+                                                  onPressed: () {
+                                                    if (item['produced'] == 0) {
+                                                      handleCheckBox(item);
+                                                    }
+                                                  }, 
+                                                  icon: const Icon(Icons.check_box_outline_blank),
+                                                ),
                                               ],
                                             ),
-                                            onTap: () {
-                                              if (item['produced'] == 0) {
-                                                handleCheckBox(item);
-                                              }
-                                            },
                                             ),
                                           ),
                                         ],
@@ -860,7 +870,7 @@ class _ProductionPageState extends State<ProductionPage> {
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               SizedBox(
-                                                width: 300,
+                                                width: 280,
                                                 child: Text(
                                                   item['display'],
                                                   style: const TextStyle(
@@ -868,14 +878,16 @@ class _ProductionPageState extends State<ProductionPage> {
                                                   ),
                                                 ),
                                               ),
-                                              Icon(Icons.check_box_outline_blank)
+                                              IconButton(
+                                                onPressed: () {
+                                                  if (item['produced'] == 0) {
+                                                    handleCheckBox(item);
+                                                  }
+                                                }, 
+                                                icon: const Icon(Icons.check_box_outline_blank),
+                                              ),
                                             ],
                                           ),
-                                          onTap: () {
-                                            if (item['produced'] == 0) {
-                                              handleCheckBox(item);
-                                            }
-                                          },
                                         ),
                                       );
                                     },
