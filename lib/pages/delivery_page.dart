@@ -21,10 +21,11 @@ class _DeliveryPageState extends State<DeliveryPage> {
   final List<String> _allFilters = ['All', 'Today', 'Tomorrow'];
   int _filterIndex = 1;
 
+  Map<String, dynamic> allOrderDetails = {};
+
   Future<List<Map<String, dynamic>>> getDeliveryLine() async {
     List<Map<String, dynamic>> orderHeader = [];
     List<Map<String, dynamic>> orderDetails = [];
-    //List allOrderDetails = [];
     List<Map<String, dynamic>> deliveryLine = [];
 
     if (_filter == 'All') {
@@ -126,6 +127,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
   @override
   Widget build(BuildContext context) {
+    allOrderDetails.clear();
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
@@ -233,6 +235,20 @@ class _DeliveryPageState extends State<DeliveryPage> {
                     );
                   }
                   final items = snapshot.data!;
+                  for (int i = 0; i < items.length; i++){
+                    print(items[i]);
+                    if (allOrderDetails.containsKey(items[i]['date'])){
+                      allOrderDetails[items[i]['date']] += [items[i]];
+                    }
+                    else {
+                      allOrderDetails[items[i]['date']] = [items[i]];
+                    }
+                  }
+
+                  allOrderDetails = Map.fromEntries(
+                    allOrderDetails.entries.toList()..sort((e1, e2) => e1.key.compareTo(e2.key)),
+                  );
+                  
                   return ListView.builder(
                     itemCount: items.length,
                     itemBuilder: (context, index) {
