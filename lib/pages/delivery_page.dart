@@ -73,6 +73,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
       item['bill'] = orderHeader[i]['bill_sent'];
       item['paid'] = orderHeader[i]['payment_done'];
       item['delivered'] = orderHeader[i]['delivered'];
+      item['produced'] = orderHeader[i]['produced'];
       item['items'] = [];
       item['bill_num_type'] = orderHeader[i]['bill_number_type'];
       item['bill_num_financial_year'] = orderHeader[i]['bill_number_financial_year'];
@@ -154,9 +155,10 @@ class _DeliveryPageState extends State<DeliveryPage> {
       await _dbhelper.updateOrderHeader('final_payment', 0, item['bill_num_type'], item['bill_num_financial_year'], item['bill_num']);
     }
 
-    // if update is bill sent then send bill in whatsapp
-    // once bill sent is checked then dont allow to uncheck that bill sent
-
+    // if produced is checked then make all items in that bill produced
+    if (update == 'produced'){
+      await _dbhelper.updateProduced(value, item['bill_num_type'].toString(), item['bill_num_financial_year'].toString(),  item['bill_num'].toString());
+    }
 
     setState(() {
       print('UPDATED !!!');
@@ -422,7 +424,9 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Container(
-                                          width: MediaQuery.of(context).size.width / 2 - 110,
+                                          padding: const EdgeInsets.only(right: 10),
+                                          //color: Colors.amber,
+                                          width: MediaQuery.of(context).size.width / 2 - 220,
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
@@ -441,30 +445,26 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                                 ),
                                               ),
                                               const SizedBox(height: 20),
-                                              ...item['items'].map<Widget>((i) {
-                                                return Row(
+                                              ...[
+                                                Row(
                                                   mainAxisAlignment: MainAxisAlignment.start,
                                                   children: [
-                                                    SizedBox(
-                                                      width: 350,
+                                                    Expanded(
                                                       child: Text(
-                                                        i[0],
+                                                        item['items'].map((i) => i[0]).join(', '),
                                                         style: const TextStyle(fontSize: 20),
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 20),
-                                                    i[1] == 0
-                                                        ? const Icon(Icons.check_box_outline_blank)
-                                                        : Icon(Icons.check_box, color: _orange),
                                                   ],
-                                                );
-                                              }).toList(),
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),
                                         // Right-hand side buttons
                                         Container(
-                                          width: MediaQuery.of(context).size.width / 2 + 20,
+                                          //color: Colors.blue,
+                                          width: MediaQuery.of(context).size.width / 2 + 130,
                                           alignment: Alignment.topRight,
                                           child: Column(
                                             children: [
@@ -472,6 +472,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
                                                   Text('Bill Sent', style: TextStyle(fontSize: 18)),
+                                                  Text('Produced', style: TextStyle(fontSize: 18)),
                                                   Text('Sticker Print', style: TextStyle(fontSize: 18)),
                                                   Text('Paid', style: TextStyle(fontSize: 18)),
                                                   Text('Delivered', style: TextStyle(fontSize: 18)),
@@ -550,18 +551,6 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                                                       elevation: 0,
                                                                     ),
                                                                     onPressed: () async {
-                                                                      /* orderHeader = getOrderHeader(item);
-                                                                      for (int i = 0; i < currentOrder.length; i++) {
-                                                                        Map<String, dynamic> itemDetails = getItemDetails(i, currentOrder[i]);
-                                                                        orderDetails.add(itemDetails);
-                                                                      }
-
-                                                                      billSaved();
-                                                                      currentBill.clear();
-                                                                      currentOrder.clear();
-                                                                      widget.onSaveBill(currentBill);
-                                                                      widget.onSaveOrder(currentOrder); */
-
                                                                       String msg = await getWhatsAppMessage(item);
                                                                       sendWhatsAppMessage(mobileNumberFieldController.text, msg);
                                                                       updateItem('bill_sent', item['bill'], item);
@@ -605,7 +594,17 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                                       )
                                                     //iconSize: 40,
                                                   ),
-                                                  const SizedBox(width: 155),
+                                                  const SizedBox(width: 126),
+                                                  IconButton(
+                                                    onPressed: () {
+                                                      updateItem('produced', item['produced'], item);
+                                                    },
+                                                    icon: item['produced'] == 0
+                                                        ? const Icon(Icons.check_box_outline_blank)
+                                                        : Icon(Icons.check_box, color: _orange),
+                                                    iconSize: 40,
+                                                  ),
+                                                  const SizedBox(width: 135),
                                                   IconButton(
                                                     onPressed: () {
                                                       updateItem('sticker_print', item['sticker'], item);
@@ -615,7 +614,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                                         : Icon(Icons.check_box, color: _orange),
                                                     iconSize: 40,
                                                   ),
-                                                  const SizedBox(width: 144),
+                                                  const SizedBox(width: 117),
                                                   IconButton(
                                                     onPressed: () {
                                                       updateItem('payment_done', item['paid'], item);
@@ -625,7 +624,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                                         : Icon(Icons.check_box, color: _orange),
                                                     iconSize: 40,
                                                   ),
-                                                  const SizedBox(width: 125),
+                                                  const SizedBox(width: 100),
                                                   IconButton(
                                                     onPressed: () {
                                                       updateItem('delivered', item['delivered'], item);

@@ -114,6 +114,16 @@ class DbHelper {
   }
 
 
+  Future<int> updateProduced(int value, String billNumberType, String billNumberFinancialYear, String billNumber) async {
+    final db = await database;
+    return await db.rawUpdate('''
+      UPDATE order_details
+      SET produced = ?
+      WHERE bill_number_type = ?
+        AND bill_number_financial_year = ?
+        AND bill_number = ?
+    ''', [value, billNumberType, billNumberFinancialYear, billNumber]);
+  }
 
   Future<int> updateProducedItem(String id, String sellqnty, String sellUnitId, startTime, endTime) async {
     final db = await database;
