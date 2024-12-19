@@ -390,38 +390,53 @@ class _OrderPageState extends State<OrderPage> {
 
     for (Map<String, dynamic> items in details) {
       String formula = _getPrintFormula(items['sell_unit_id']);
+
+      num amt = items['sell_rate'] * items['number_of_items'];
+      dynamic amount = (amt % 1 == 0) ? amt.toInt() : amt;
+
       print(formula);
       if (formula == 'num_x_sellqnty') {
         // (number of items * sell qnty) name
-        invoiceItems =
-            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+        invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} @ Rs $amount/-\n';
       } else if (formula == 'num_x_sellqnty_unit') {
         // 
-        invoiceItems =
-            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} (${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+        invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} (${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
       } else {
         // num  name (sellqnty sellunit)
-        invoiceItems =
-            '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+        invoiceItems = '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
       }
     }
 
+    num delv = header['delivery_charges'];
+    num total = (header['total_amount'] + header['delivery_charges']);
+    num disc = header['discount_amount'];
+    num fin = (header['total_amount'] + header['delivery_charges'] - header['discount_amount']);
+    num adv = header['advance_paid'];
+    num bal = (header['total_amount'] + header['delivery_charges'] - header['discount_amount'] - header['advance_paid']);
+
+    dynamic delivery_charges = (delv % 1 == 0) ? delv.toInt() : delv;
+    dynamic total_amount = (total % 1 == 0) ? total.toInt() : total;
+    dynamic discount_amount = (disc % 1 == 0) ? disc.toInt() : disc;
+    dynamic final_payment = (fin % 1 == 0) ? fin.toInt() : fin;
+    dynamic advance_paid = (adv % 1 == 0) ? adv.toInt() : adv;
+    dynamic balance_amount = (bal % 1 == 0) ? bal.toInt() : bal;
+
     String invoiceDeliveryCharges =
-        'Delivery Charges @ Rs ${header['delivery_charges']}/-';
+        'Delivery Charges @ Rs $delivery_charges/-';
 
     String invoiceTotalOrderAmount =
-        'Total Order Amount = *Rs ${(header['total_amount'] + header['delivery_charges']).toString()}/-*';
+        'Total Order Amount = *Rs ${total_amount.toString()}/-*';
 
     String invoiceDiscountAmount = '';
     if (header['discount_amount'] != 0) {
       invoiceDiscountAmount =
-          'Discount Amount @ Rs ${header['discount_amount']}/-\nFinal Order Amount = *Rs ${(header['total_amount'] + header['delivery_charges'] - header['discount_amount']).toString()}/-*\n\n';
+          'Discount Amount @ Rs $discount_amount/-\nFinal Order Amount = *Rs ${final_payment.toString()}/-*\n\n';
     }
 
     String invoiceAdvanceAmount = '';
     if (header['advance_paid'] != 0) {
       invoiceAdvanceAmount =
-          'Advance Paid @ Rs ${header['advance_paid']}\nBalance Amount = *Rs ${(header['total_amount'] + header['delivery_charges'] - header['discount_amount'] - header['advance_paid']).toString()}/-*\n\n';
+          'Advance Paid @ Rs $advance_paid\nBalance Amount = *Rs ${balance_amount.toString()}/-*\n\n';
     }
 
     String invoiceFooter =
@@ -635,7 +650,7 @@ class _OrderPageState extends State<OrderPage> {
                                       ),
                                       elevation: 0,
                                     ),
-                                    onPressed: () {
+                                    onPressed: () async {
                                       orderHeader = getOrderHeader();
                                       for (int i = 0;
                                           i < currentOrder.length;
@@ -658,7 +673,9 @@ class _OrderPageState extends State<OrderPage> {
                                         textColor: Colors.white,
                                         fontSize: 20,
                                       );
+                                      await _dbhelper.updateOrderHeader('bill_sent', 1, orderHeader['bill_number_type'], orderHeader['bill_number_financial_year'], orderHeader['bill_number']);
                                       sendWhatsAppMessage(mobileNumberFieldController.text,getWhatsAppMessage(orderHeader, orderDetails));
+
                                       Navigator.pushNamed(context, '/homepage');
                                     },
                                     child: const Text('Yes'),

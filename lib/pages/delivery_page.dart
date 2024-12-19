@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -205,37 +207,54 @@ class _DeliveryPageState extends State<DeliveryPage> {
       String itemName = await _dbhelper.getItemName(items['item_id']);
       String unitName = await _dbhelper.getUnitName(items['sell_unit_id']);
 
+      num amt = items['sell_rate'] * items['number_of_items'];
+      dynamic amount = (amt % 1 == 0) ? amt.toInt() : amt;
+
       if (formula == 'num_x_sellqnty') {
         // (number of items * sell qnty) name
         invoiceItems =
-            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName @ Rs $amount/-\n';
       } else if (formula == 'num_x_sellqnty_unit') {
         // 
         invoiceItems =
-            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName ($unitName) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName ($unitName) @ Rs $amount/-\n';
       } else {
         // num  name (sellqnty sellunit)
         invoiceItems =
-            '$invoiceItems${items['number_of_items']} $itemName (${items['sell_quantity']} $unitName) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+            '$invoiceItems${items['number_of_items']} $itemName (${items['sell_quantity']} $unitName) @ Rs $amount/-\n';
       }
     }
 
+    num delv = header[0]['delivery_charges'];
+    num total = (header[0]['total_amount'] + header[0]['delivery_charges']);
+    num disc = header[0]['discount_amount'];
+    num fin = (header[0]['total_amount'] + header[0]['delivery_charges'] - header[0]['discount_amount']);
+    num adv = header[0]['advance_paid'];
+    num bal = (header[0]['total_amount'] + header[0]['delivery_charges'] - header[0]['discount_amount'] - header[0]['advance_paid']);
+
+    dynamic delivery_charges = (delv % 1 == 0) ? delv.toInt() : delv;
+    dynamic total_amount = (total % 1 == 0) ? total.toInt() : total;
+    dynamic discount_amount = (disc % 1 == 0) ? disc.toInt() : disc;
+    dynamic final_payment = (fin % 1 == 0) ? fin.toInt() : fin;
+    dynamic advance_paid = (adv % 1 == 0) ? adv.toInt() : adv;
+    dynamic balance_amount = (bal % 1 == 0) ? bal.toInt() : bal;
+
     String invoiceDeliveryCharges =
-        'Delivery Charges @ Rs ${header[0]['delivery_charges']}/-';
+        'Delivery Charges @ Rs $delivery_charges/-';
 
     String invoiceTotalOrderAmount =
-        'Total Order Amount = *Rs ${(header[0]['total_amount'] + header[0]['delivery_charges']).toString()}/-*';
+        'Total Order Amount = *Rs ${total_amount.toString()}/-*';
 
     String invoiceDiscountAmount = '';
     if (header[0]['discount_amount'] != 0) {
       invoiceDiscountAmount =
-          'Discount Amount @ Rs ${header[0]['discount_amount']}/-\nFinal Order Amount = *Rs ${(header[0]['total_amount'] + header[0]['delivery_charges'] - header[0]['discount_amount']).toString()}/-*\n\n';
+          'Discount Amount @ Rs $discount_amount/-\nFinal Order Amount = *Rs ${final_payment.toString()}/-*\n\n';
     }
 
     String invoiceAdvanceAmount = '';
     if (header[0]['advance_paid'] != 0) {
       invoiceAdvanceAmount =
-          'Advance Paid @ Rs ${header[0]['advance_paid']}\nBalance Amount = *Rs ${(header[0]['total_amount'] + header[0]['delivery_charges'] - header[0]['discount_amount'] - header[0]['advance_paid']).toString()}/-*\n\n';
+          'Advance Paid @ Rs $advance_paid\nBalance Amount = *Rs ${balance_amount.toString()}/-*\n\n';
     }
 
     String invoiceFooter =
@@ -245,8 +264,8 @@ class _DeliveryPageState extends State<DeliveryPage> {
         '$invoiceHeader\n\n$invoiceDetails\n\n$invoiceItems\n$invoiceDeliveryCharges\n\n$invoiceTotalOrderAmount\n\n$invoiceDiscountAmount$invoiceAdvanceAmount$invoiceFooter';
 
     return msg;
+}
     //return '';
-  }
 
   @override
   Widget build(BuildContext context) {
