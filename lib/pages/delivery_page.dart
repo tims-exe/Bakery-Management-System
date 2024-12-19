@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:url_launcher/url_launcher.dart';
 //import 'package:nissy_bakes_app/components/coming_soon.dart';
 import '../database/dbhelper.dart';
 
@@ -14,12 +18,24 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
   final Color _orange = const Color.fromRGBO(230, 84, 0, 1);
   final Color _grey = const Color.fromARGB(255, 212, 212, 212);
+  final Color _lightOrange = const Color.fromRGBO(255, 168, 120, 1);
+
 
   DateTime _date = DateTime.now();
 
   String _filter = 'Today';
   final List<String> _allFilters = ['All', 'Today', 'Tomorrow'];
   int _filterIndex = 1;
+
+  TextEditingController mobileNumberFieldController = TextEditingController();
+
+  final mobileNo = dotenv.env['MOBILE_NO'];
+  final fssai = dotenv.env['FSSAI'];
+  final upi = dotenv.env['UPI_ID'];
+  final upiNo = dotenv.env['UPI_NO'];
+  final link = dotenv.env['LINK'];
+  final email = dotenv.env['EMAIL'];
+  final int billNumberFinancialYear = int.parse(dotenv.env['BILL_NUMBER_FINANCIAL_YEAR']!);
 
   Map<String, dynamic> allOrderDetails = {};
 
@@ -34,8 +50,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
     } else {
       String currentDate =
           '${_date.year.toString().padLeft(2, '0')}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
-      orderHeader = await _dbhelper.getOrderHeaderCondition(
-          'order_header', ['delivery_date = ?'], [currentDate], true);
+      orderHeader = await _dbhelper.getOrderHeaderCondition('order_header', ['delivery_date = ?'], [currentDate], true);
     }
 
     List<String> conditions = [
@@ -49,6 +64,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
 
       item['date'] = orderHeader[i]['delivery_date'];
       item['customer'] = await _dbhelper.getCustomerName(orderHeader[i]['customer_id']);
+      item['customer_phone'] = await _dbhelper.getCustomerPhone(orderHeader[i]['customer_id']);
       item['bill_number'] = '${orderHeader[i]['bill_number_type']}${orderHeader[i]['bill_number_financial_year']}-${orderHeader[i]['bill_number']}';
       item['time'] = orderHeader[i]['delivery_time'];
       item['sticker'] = orderHeader[i]['sticker_print'];
@@ -59,6 +75,10 @@ class _DeliveryPageState extends State<DeliveryPage> {
       item['bill_num_type'] = orderHeader[i]['bill_number_type'];
       item['bill_num_financial_year'] = orderHeader[i]['bill_number_financial_year'];
       item['bill_num'] = orderHeader[i]['bill_number'];
+      item['total_amount'] = orderHeader[i]['total_amount'];
+      item['delivery_charges'] = orderHeader[i]['delivery_charges'];
+      item['discount'] = orderHeader[i]['discount_amount'];
+      item['advance'] = orderHeader[i]['advance_paid'];
 
       List<dynamic> conditionArgs = [
         orderHeader[i]['bill_number_type'],
@@ -113,16 +133,119 @@ class _DeliveryPageState extends State<DeliveryPage> {
   }
 
   void updateItem(String update, int value,  Map<String, dynamic> item) async {
-    // if update is bill sent then send bill in whatsapp
-    // if update is payment done then update final payment
-    // once bill sent is checked then dont allow to uncheck that bill sent
 
     value == 0 ? value = 1 : value = 0;
 
     await _dbhelper.updateOrderHeader(update, value, item['bill_num_type'], item['bill_num_financial_year'], item['bill_num']);
+
+    List<Map<String, dynamic>> header = await _dbhelper.getOrderHeaderCondition('order_header', ['bill_number_type = ?', 'bill_number_financial_year = ?', 'bill_number = ?'], [item['bill_num_type'], item['bill_num_financial_year'], item['bill_num']], false);
+
+    print(header);
+
+
+    // if update is payment done then update final payment
+    if (update == 'payment_done' && value == 1){
+      num finalAmount = item['total_amount'] + item['delivery_charges'] - item['advance'] - item['discount'];
+      await _dbhelper.updateOrderHeader('final_payment', finalAmount, item['bill_num_type'], item['bill_num_financial_year'], item['bill_num']);
+    }
+    else if (update == 'payment_done' && value == 0){
+      await _dbhelper.updateOrderHeader('final_payment', 0, item['bill_num_type'], item['bill_num_financial_year'], item['bill_num']);
+    }
+
+    // if update is bill sent then send bill in whatsapp
+    // once bill sent is checked then dont allow to uncheck that bill sent
+
+
     setState(() {
       print('UPDATED !!!');
     }); 
+  }
+
+  void sendWhatsAppMessage(String phoneNumber, String message) async {
+    String formattedPhoneNumber = '+91$phoneNumber';
+    if (phoneNumber.split(' ').where((number) => number.isNotEmpty).length > 1){
+      formattedPhoneNumber = phoneNumber.replaceAll(' ', '').substring(1);
+    } 
+    final Uri whatsappUrl = Uri.parse(
+        'https://wa.me/$formattedPhoneNumber?text=${Uri.encodeComponent(message)}');
+    print(whatsappUrl);
+    try {
+      if (await canLaunchUrl(whatsappUrl)) {
+        await launchUrl(whatsappUrl);
+      } else {
+        throw 'Could not launch $whatsappUrl';
+      }
+    } catch (e) {
+      print('Error launching URL: $e');
+    }
+  }
+
+  String convertDate(String date) {
+  DateTime parsedDate = DateTime.parse(date);
+  String formattedDate = '${parsedDate.day.toString().padLeft(2, '0')}-'
+      '${parsedDate.month.toString().padLeft(2, '0')}-'
+      '${parsedDate.year}';
+  
+  return formattedDate;
+}
+
+  Future<String> getWhatsAppMessage(Map<String, dynamic> item) async {
+
+    List<Map<String, dynamic>> header = await _dbhelper.getOrderHeaderCondition('order_header', ['bill_number_type = ?', 'bill_number_financial_year = ?', 'bill_number = ?'], [item['bill_num_type'], item['bill_num_financial_year'], item['bill_num']], false);
+    List<Map<String, dynamic>> details = await _dbhelper.getOrderHeaderCondition('order_details', ['bill_number_type = ?', 'bill_number_financial_year = ?', 'bill_number = ?'], [item['bill_num_type'], item['bill_num_financial_year'], item['bill_num']], false);
+
+    String invoiceHeader = '*Nissy Bakes*\nIrumpanam, Kochi\n_fssai_: $fssai';
+    String invoiceDetails = '*Invoice*\nBill# : ${header[0]['bill_number_type']}${header[0]['bill_number_financial_year']}-${header[0]['bill_number']}\nDate : ${convertDate(header[0]['delivery_date'])}';
+
+    String invoiceItems = '';
+
+    for (Map<String, dynamic> items in details) {
+      String formula = await _dbhelper.getUnitFormula(items['sell_unit_id']);
+
+      String itemName = await _dbhelper.getItemName(items['item_id']);
+      String unitName = await _dbhelper.getUnitName(items['sell_unit_id']);
+
+      if (formula == 'num_x_sellqnty') {
+        // (number of items * sell qnty) name
+        invoiceItems =
+            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      } else if (formula == 'num_x_sellqnty_unit') {
+        // 
+        invoiceItems =
+            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName ($unitName) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      } else {
+        // num  name (sellqnty sellunit)
+        invoiceItems =
+            '$invoiceItems${items['number_of_items']} $itemName (${items['sell_quantity']} $unitName) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      }
+    }
+
+    String invoiceDeliveryCharges =
+        'Delivery Charges @ Rs ${header[0]['delivery_charges']}/-';
+
+    String invoiceTotalOrderAmount =
+        'Total Order Amount = *Rs ${(header[0]['total_amount'] + header[0]['delivery_charges']).toString()}/-*';
+
+    String invoiceDiscountAmount = '';
+    if (header[0]['discount_amount'] != 0) {
+      invoiceDiscountAmount =
+          'Discount Amount @ Rs ${header[0]['discount_amount']}/-\nFinal Order Amount = *Rs ${(header[0]['total_amount'] + header[0]['delivery_charges'] - header[0]['discount_amount']).toString()}/-*\n\n';
+    }
+
+    String invoiceAdvanceAmount = '';
+    if (header[0]['advance_paid'] != 0) {
+      invoiceAdvanceAmount =
+          'Advance Paid @ Rs ${header[0]['advance_paid']}\nBalance Amount = *Rs ${(header[0]['total_amount'] + header[0]['delivery_charges'] - header[0]['discount_amount'] - header[0]['advance_paid']).toString()}/-*\n\n';
+    }
+
+    String invoiceFooter =
+        'Payments by Cash / Cheque / GPay @$upiNo / UPI: $upi upon delivery\n\n*Please share your feedback using the link $link*\n\n      Reach Us @ *$mobileNo* or *$email*\n\n       _Thank you for your order_';
+
+    String msg =
+        '$invoiceHeader\n\n$invoiceDetails\n\n$invoiceItems\n$invoiceDeliveryCharges\n\n$invoiceTotalOrderAmount\n\n$invoiceDiscountAmount$invoiceAdvanceAmount$invoiceFooter';
+
+    return msg;
+    //return '';
   }
 
   @override
@@ -214,6 +337,307 @@ class _DeliveryPageState extends State<DeliveryPage> {
               ),
             ),
             Expanded(
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: getDeliveryLine(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No items found'));
+                  }
+
+                  final items = snapshot.data!;
+                  final Map<String, List<Map<String, dynamic>>> allOrderDetails = {};
+
+                  // Organize items into the allOrderDetails map grouped by date
+                  for (var item in items) {
+                    allOrderDetails.update(
+                      item['date'],
+                      (existing) => existing..add(item),
+                      ifAbsent: () => [item],
+                    );
+                  }
+
+                  // Sort the map entries by key
+                  final sortedEntries = allOrderDetails.entries.toList()
+                    ..sort((e1, e2) => e1.key.compareTo(e2.key));
+
+                  return ListView.builder(
+                    itemCount: sortedEntries.length,
+                    itemBuilder: (context, index) {
+                      final entry = sortedEntries[index];
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Display the date as a header
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              convertDate(entry.key),
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: _orange
+                              ),
+                            ),
+                          ),
+
+                          // ListView for the items under each date
+                          ListView.builder(
+                            shrinkWrap: true, // Fix for unbounded height
+                            physics: const NeverScrollableScrollPhysics(), // Disable scrolling
+                            itemCount: entry.value.length,
+                            itemBuilder: (context, itemIndex) {
+                              final item = entry.value[itemIndex];
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    title: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: MediaQuery.of(context).size.width / 2 - 110,
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Customer: ${item['customer']}',
+                                                style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Time: ${formatTime(item['time'])}',
+                                                style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.normal,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 20),
+                                              ...item['items'].map<Widget>((i) {
+                                                return Row(
+                                                  mainAxisAlignment: MainAxisAlignment.start,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 350,
+                                                      child: Text(
+                                                        i[0],
+                                                        style: const TextStyle(fontSize: 20),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 20),
+                                                    i[1] == 0
+                                                        ? const Icon(Icons.check_box_outline_blank)
+                                                        : Icon(Icons.check_box, color: _orange),
+                                                  ],
+                                                );
+                                              }).toList(),
+                                            ],
+                                          ),
+                                        ),
+                                        // Right-hand side buttons
+                                        Container(
+                                          width: MediaQuery.of(context).size.width / 2 + 20,
+                                          alignment: Alignment.topRight,
+                                          child: Column(
+                                            children: [
+                                              const Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text('Bill Sent', style: TextStyle(fontSize: 18)),
+                                                  Text('Sticker Print', style: TextStyle(fontSize: 18)),
+                                                  Text('Paid', style: TextStyle(fontSize: 18)),
+                                                  Text('Delivered', style: TextStyle(fontSize: 18)),
+                                                ],
+                                              ),
+                                              Row(
+                                                children: [
+                                                  const SizedBox(width: 6),
+                                                  SizedBox(
+                                                    /* onPressed: () {
+                                                      updateItem('bill_sent', item['bill'], item);
+                                                    }, */
+                                                    // once bill is sent then dont allow to uncheck that button
+                                                    child: item['bill'] == 0 ?
+                                                      TextButton(
+                                                        onPressed: ()  {
+                                                          if (item['customer_phone'] != '') {
+                                                            mobileNumberFieldController.text = item['customer_phone'];
+                                                          }
+                                                          else{
+                                                            mobileNumberFieldController.text = mobileNo!;
+                                                          }
+                                                          showDialog(
+                                                            context: context,
+                                                            builder: (context) {
+                                                              return AlertDialog(
+                                                                backgroundColor: Colors.white,
+                                                                title: const Text(
+                                                                  'Save and Send Invoice',
+                                                                  textAlign: TextAlign.center,
+                                                                ),
+                                                                content: TextField(
+                                                                  controller: mobileNumberFieldController,
+                                                                  keyboardType: TextInputType.number,
+                                                                  inputFormatters: <TextInputFormatter>[
+                                                                    FilteringTextInputFormatter.digitsOnly,
+                                                                  ],
+                                                                  decoration: InputDecoration(
+                                                                    border: OutlineInputBorder(
+                                                                      borderRadius: BorderRadius.circular(10), 
+                                                                      borderSide: const BorderSide(
+                                                                        color: Colors.grey, 
+                                                                        width: 1.0, // Border width
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  minLines: 1,
+                                                                  maxLines: null,
+                                                                  onSubmitted: (value) {
+                                                                    mobileNumberFieldController.text = value;
+                                                                  },
+                                                                ),
+                                                                actions: [
+                                                                  ElevatedButton(
+                                                                    style: ElevatedButton.styleFrom(
+                                                                      foregroundColor:
+                                                                          const Color.fromARGB(255, 0, 0, 0),
+                                                                      backgroundColor: _lightOrange,
+                                                                      shape: RoundedRectangleBorder(
+                                                                        borderRadius: BorderRadius.circular(8),
+                                                                      ),
+                                                                      elevation: 0,
+                                                                    ),
+                                                                    onPressed: () {
+                                                                      Navigator.pop(context);
+                                                                    },
+                                                                    child: const Text('No'),
+                                                                  ),
+                                                                  ElevatedButton(
+                                                                    style: ElevatedButton.styleFrom(
+                                                                      foregroundColor: Colors.black,
+                                                                      backgroundColor: _lightOrange,
+                                                                      shape: RoundedRectangleBorder(
+                                                                        borderRadius: BorderRadius.circular(8),
+                                                                      ),
+                                                                      elevation: 0,
+                                                                    ),
+                                                                    onPressed: () async {
+                                                                      /* orderHeader = getOrderHeader(item);
+                                                                      for (int i = 0; i < currentOrder.length; i++) {
+                                                                        Map<String, dynamic> itemDetails = getItemDetails(i, currentOrder[i]);
+                                                                        orderDetails.add(itemDetails);
+                                                                      }
+
+                                                                      billSaved();
+                                                                      currentBill.clear();
+                                                                      currentOrder.clear();
+                                                                      widget.onSaveBill(currentBill);
+                                                                      widget.onSaveOrder(currentOrder); */
+
+                                                                      String msg = await getWhatsAppMessage(item);
+                                                                      sendWhatsAppMessage(mobileNumberFieldController.text, msg);
+                                                                      updateItem('bill_sent', item['bill'], item);
+                                                                      Navigator.pop(context);
+                                                                      Fluttertoast.showToast(
+                                                                        msg: 'Bill Sent !!',
+                                                                        toastLength: Toast.LENGTH_SHORT,
+                                                                        gravity: ToastGravity.BOTTOM,
+                                                                        backgroundColor: Colors.green,
+                                                                        textColor: Colors.white,
+                                                                        fontSize: 20,
+                                                                      );
+                                                                    },
+                                                                    child: const Text('Yes'),
+                                                                  ),
+                                                                ],
+                                                              );
+                                                            },
+                                                          );
+                                                        },
+                                                        style: TextButton.styleFrom(
+                                                          padding: EdgeInsets.zero,
+                                                          minimumSize: const Size(30, 30),
+                                                        ),
+                                                        child: Opacity(
+                                                          opacity: 0.7,
+                                                          child: Image.asset(
+                                                            'assets/send.png',
+                                                            width: 30,
+                                                            height: 30,
+                                                          ),
+                                                        ),
+                                                      )
+                                                    :
+                                                      Row(
+                                                        children: [
+                                                          const SizedBox(width: 8,),
+                                                          Icon(Icons.check_box, color: _orange, size: 40,),
+                                                          const SizedBox(width: 2,),
+                                                        ],
+                                                      )
+                                                    //iconSize: 40,
+                                                  ),
+                                                  const SizedBox(width: 155),
+                                                  IconButton(
+                                                    onPressed: () {
+                                                      updateItem('sticker_print', item['sticker'], item);
+                                                    },
+                                                    icon: item['sticker'] == 0
+                                                        ? const Icon(Icons.check_box_outline_blank)
+                                                        : Icon(Icons.check_box, color: _orange),
+                                                    iconSize: 40,
+                                                  ),
+                                                  const SizedBox(width: 144),
+                                                  IconButton(
+                                                    onPressed: () {
+                                                      updateItem('payment_done', item['paid'], item);
+                                                    },
+                                                    icon: item['paid'] == 0
+                                                        ? const Icon(Icons.check_box_outline_blank)
+                                                        : Icon(Icons.check_box, color: _orange),
+                                                    iconSize: 40,
+                                                  ),
+                                                  const SizedBox(width: 125),
+                                                  IconButton(
+                                                    onPressed: () {
+                                                      updateItem('delivered', item['delivered'], item);
+                                                    },
+                                                    icon: item['delivered'] == 0
+                                                        ? const Icon(Icons.check_box_outline_blank)
+                                                        : Icon(Icons.check_box, color: _orange),
+                                                    iconSize: 40,
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Divider(thickness: 1, color: _grey, height: 15),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            /* Expanded(
               child: FutureBuilder<List<Map<String, dynamic>>>(
                 future: getDeliveryLine(),
                 builder: (context, snapshot) {
@@ -347,16 +771,124 @@ class _DeliveryPageState extends State<DeliveryPage> {
                                           const SizedBox(
                                             width: 6,
                                           ),
-                                          IconButton(
-                                            onPressed: () {
+                                          SizedBox(
+                                            /* onPressed: () {
                                               updateItem('bill_sent', item['bill'], item);
-                                            },
+                                            }, */
                                             // once bill is sent then dont allow to uncheck that button
-                                            icon: item['bill'] == 0 ?
-                                              const Icon(Icons.check_box_outline_blank)
+                                            child: item['bill'] == 0 ?
+                                              TextButton(
+                                                onPressed: ()  {
+                                                  if (item['customer_phone'] != '') {
+                                                    mobileNumberFieldController.text = item['customer_phone'];
+                                                  }
+                                                  else{
+                                                    mobileNumberFieldController.text = mobileNo!;
+                                                  }
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) {
+                                                      return AlertDialog(
+                                                        backgroundColor: Colors.white,
+                                                        title: const Text(
+                                                          'Save and Send Invoice',
+                                                          textAlign: TextAlign.center,
+                                                        ),
+                                                        content: TextField(
+                                                          controller: mobileNumberFieldController,
+                                                          keyboardType: TextInputType.number,
+                                                          inputFormatters: <TextInputFormatter>[
+                                                            FilteringTextInputFormatter.digitsOnly,
+                                                          ],
+                                                          decoration: InputDecoration(
+                                                            border: OutlineInputBorder(
+                                                              borderRadius: BorderRadius.circular(10), 
+                                                              borderSide: const BorderSide(
+                                                                color: Colors.grey, 
+                                                                width: 1.0, // Border width
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          minLines: 1,
+                                                          maxLines: null,
+                                                          onSubmitted: (value) {
+                                                            mobileNumberFieldController.text = value;
+                                                          },
+                                                        ),
+                                                        actions: [
+                                                          ElevatedButton(
+                                                            style: ElevatedButton.styleFrom(
+                                                              foregroundColor:
+                                                                  const Color.fromARGB(255, 0, 0, 0),
+                                                              backgroundColor: _lightOrange,
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius: BorderRadius.circular(8),
+                                                              ),
+                                                              elevation: 0,
+                                                            ),
+                                                            onPressed: () {
+                                                              Navigator.pop(context);
+                                                            },
+                                                            child: const Text('No'),
+                                                          ),
+                                                          ElevatedButton(
+                                                            style: ElevatedButton.styleFrom(
+                                                              foregroundColor: Colors.black,
+                                                              backgroundColor: _lightOrange,
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius: BorderRadius.circular(8),
+                                                              ),
+                                                              elevation: 0,
+                                                            ),
+                                                            onPressed: () async {
+                                                              /* orderHeader = getOrderHeader(item);
+                                                              for (int i = 0; i < currentOrder.length; i++) {
+                                                                Map<String, dynamic> itemDetails = getItemDetails(i, currentOrder[i]);
+                                                                orderDetails.add(itemDetails);
+                                                              }
+
+                                                              billSaved();
+                                                              currentBill.clear();
+                                                              currentOrder.clear();
+                                                              widget.onSaveBill(currentBill);
+                                                              widget.onSaveOrder(currentOrder); */
+
+                                                              String msg = await getWhatsAppMessage(item);
+                                                              sendWhatsAppMessage(mobileNumberFieldController.text, msg);
+                                                              updateItem('bill_sent', item['bill'], item);
+                                                              Navigator.pop(context);
+                                                              Fluttertoast.showToast(
+                                                                msg: 'Bill Sent !!',
+                                                                toastLength: Toast.LENGTH_SHORT,
+                                                                gravity: ToastGravity.BOTTOM,
+                                                                backgroundColor: Colors.green,
+                                                                textColor: Colors.white,
+                                                                fontSize: 20,
+                                                              );
+                                                            },
+                                                            child: const Text('Yes'),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  padding: EdgeInsets.zero,
+                                                  minimumSize: const Size(30, 30),
+                                                ),
+                                                child: Opacity(
+                                                  opacity: 0.7,
+                                                  child: Image.asset(
+                                                    'assets/send.png',
+                                                    width: 30,
+                                                    height: 30,
+                                                  ),
+                                                ),
+                                              )
                                             :
-                                              Icon(Icons.check_box, color: _orange,),
-                                            iconSize: 40,
+                                              Icon(Icons.check_box, color: _orange, size: 40,),
+                                            //iconSize: 40,
                                           ),
                                           const SizedBox(
                                             width: 155,
@@ -416,7 +948,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
                   );
                 },
               ),
-            ),
+            ), */
           ],
         ),
       ),

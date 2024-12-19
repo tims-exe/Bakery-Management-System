@@ -258,7 +258,7 @@ class _OrderPageState extends State<OrderPage> {
 
     // get bill number type and financial year from settings table
     details['bill_number_type'] = 'B';
-    details['bill_number_financial_year'] = 2425;
+    details['bill_number_financial_year'] = billNumberFinancialYear;
     details['bill_number'] = billNumber;
     details['sl_number'] = index + 1;
     details['item_id'] = item['id'];

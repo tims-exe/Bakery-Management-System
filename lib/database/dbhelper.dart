@@ -84,7 +84,21 @@ class DbHelper {
   Future<String> getCustomerName(int id) async {
     final db = await database;
     List<Map<String, dynamic>> item =  await db.rawQuery('SELECT customer_name, reference FROM customer_master WHERE customer_id = $id');
-    return '${item[0]['customer_name']} (${item[0]['reference']})';
+    String name = '';
+    if (item[0]['reference'] == ''){
+      name = '${item[0]['customer_name']}';
+    }
+    else {
+      name = '${item[0]['customer_name']} (${item[0]['reference']})';
+    }
+    return name;
+  }
+
+  Future<String> getCustomerPhone(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> item =  await db.rawQuery('SELECT customer_phone FROM customer_master WHERE customer_id = $id');
+
+    return item[0]['customer_phone'];
   }
 
   Future<String> getUnitName(int id) async {
@@ -98,6 +112,8 @@ class DbHelper {
     List<Map<String, dynamic>> unit =  await db.rawQuery('SELECT print_formula FROM unit_master WHERE unit_id = $id');
     return unit[0]['print_formula'];
   }
+
+
 
   Future<int> updateProducedItem(String id, String sellqnty, String sellUnitId, startTime, endTime) async {
     final db = await database;
@@ -199,6 +215,7 @@ class DbHelper {
     final db = await database;
     return await db.rawUpdate('UPDATE order_header SET $condition = ? WHERE bill_number_type = ? AND bill_number_financial_year = ? AND bill_number = ?', [value, billNumberType, billNumberFinancialYear, billNumber]);
   }
+  
 
   //update order header
   Future<int> updateHeader(Map<String, dynamic> header, String whereClause,
