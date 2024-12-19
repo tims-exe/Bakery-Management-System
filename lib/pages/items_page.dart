@@ -391,12 +391,21 @@ class _ItemsPageState extends State<ItemsPage> {
                                   ),
                                   Container(
                                     alignment: Alignment.center,
-                                    width: headingSize,
-                                    child: Text(
-                                      'Balance Amt',
-                                      style: TextStyle(
-                                        fontSize: headingTextSize,
-                                        fontWeight: FontWeight.w500,
+                                    width: headingSize - 20,
+                                    //color: Colors.amber,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _ordersFilter = '(total_amount + delivery_charges - discount_amount - advance_paid - final_payment) DESC';
+                                        });
+                                      },
+                                      child: Text(
+                                        'Balance',  
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: headingTextSize,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
