@@ -212,18 +212,29 @@ class _DeliveryPageState extends State<DeliveryPage> {
       num amt = items['sell_rate'] * items['number_of_items'];
       dynamic amount = (amt % 1 == 0) ? amt.toInt() : amt;
 
-      if (formula == 'num_x_sellqnty') {
-        // (number of items * sell qnty) name
-        invoiceItems =
-            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName @ Rs $amount/-\n';
-      } else if (formula == 'num_x_sellqnty_unit') {
-        // 
-        invoiceItems =
-            '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName ($unitName) @ Rs $amount/-\n';
-      } else {
-        // num  name (sellqnty sellunit)
-        invoiceItems =
-            '$invoiceItems${items['number_of_items']} $itemName (${items['sell_quantity']} $unitName) @ Rs $amount/-\n';
+      if (amount != 0){
+        if (formula == 'num_x_sellqnty') {
+          // (number of items * sell qnty) name
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName @ Rs $amount/-\n';
+        } else if (formula == 'num_x_sellqnty_unit') {
+          // 
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName ($unitName) @ Rs $amount/-\n';
+        } else {
+          // num  name (sellqnty sellunit)
+          invoiceItems = '$invoiceItems${items['number_of_items']} $itemName (${items['sell_quantity']} $unitName) @ Rs $amount/-\n';
+        }
+      }
+      else {
+        if (formula == 'num_x_sellqnty') {
+          // (number of items * sell qnty) name
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName\n';
+        } else if (formula == 'num_x_sellqnty_unit') {
+          // 
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} $itemName ($unitName)\n';
+        } else {
+          // num  name (sellqnty sellunit)
+          invoiceItems = '$invoiceItems${items['number_of_items']} $itemName (${items['sell_quantity']} $unitName)\n';
+        }
       }
     }
 

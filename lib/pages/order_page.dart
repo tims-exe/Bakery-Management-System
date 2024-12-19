@@ -395,15 +395,29 @@ class _OrderPageState extends State<OrderPage> {
       dynamic amount = (amt % 1 == 0) ? amt.toInt() : amt;
 
       print(formula);
-      if (formula == 'num_x_sellqnty') {
-        // (number of items * sell qnty) name
-        invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} @ Rs $amount/-\n';
-      } else if (formula == 'num_x_sellqnty_unit') {
-        // 
-        invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} (${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
-      } else {
-        // num  name (sellqnty sellunit)
-        invoiceItems = '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ Rs ${(items['sell_rate'] * items['number_of_items'])}/-\n';
+      if (amount != 0){
+        if (formula == 'num_x_sellqnty') {
+          // (number of items * sell qnty) name
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} @ Rs $amount/-\n';
+        } else if (formula == 'num_x_sellqnty_unit') {
+          // 
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} (${_getUnitId(items['sell_unit_id'])}) @ Rs $amount/-\n';
+        } else {
+          // num  name (sellqnty sellunit)
+          invoiceItems = '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])}) @ Rs $amount/-\n';
+        }
+      }
+      else {
+        if (formula == 'num_x_sellqnty') {
+          // (number of items * sell qnty) name
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])}\n';
+        } else if (formula == 'num_x_sellqnty_unit') {
+          // 
+          invoiceItems = '$invoiceItems${(items['number_of_items'] * items['sell_quantity'])} ${_getItemName(items['item_id'])} (${_getUnitId(items['sell_unit_id'])})\n';
+        } else {
+          // num  name (sellqnty sellunit)
+          invoiceItems = '$invoiceItems${items['number_of_items']} ${_getItemName(items['item_id'])} (${items['sell_quantity']} ${_getUnitId(items['sell_unit_id'])})\n';
+        }
       }
     }
 
