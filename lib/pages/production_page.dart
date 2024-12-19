@@ -20,66 +20,8 @@ class _ProductionPageState extends State<ProductionPage> {
 
   DateTime _date = DateTime.now();
 
-  // OLD CODE
-  /* List<Map<String, dynamic>> customers = [];
-
-  List<Map<String, dynamic>> notProducedOrderHeader = [];
-  List orderDetails = [];
-
-  Future<List<Map<String, dynamic>>> getOrderDetails() async {
-    List<Map<String, dynamic>> getHeader =
-        await _dbhelper.getNotProducedOrderHeader('order_header');
-    for (int i = 0; i < getHeader.length; i++) {
-      List<Map<String, dynamic>> fetchedOrder = await _dbhelper.getOrderItems(
-        'order_details',
-        [
-          'bill_number_type = ?',
-          'bill_number_financial_year = ?',
-          'bill_number = ?',
-        ],
-        [
-          getHeader[i]['bill_number_type'],
-          getHeader[i]['bill_number_financial_year'],
-          getHeader[i]['bill_number'],
-        ],
-      );
-      orderDetails.add(fetchedOrder);
-    }
-    notProducedOrderHeader =
-        getHeader.map((item) => Map<String, dynamic>.from(item)).toList();
-    debugPrint(notProducedOrderHeader.toString());
-    debugPrint('***');
-    debugPrint(orderDetails.toString());
-
-    return notProducedOrderHeader;
-  }
-
-  Future getCustomerList() async {
-    customers = await _dbhelper.getCustomers('customer_master');
-  }
-
-  String getCustomer(int id) {
-    for (var c in customers) {
-      if (c['customer_id'] == id) {
-        return c['customer_name'];
-      }
-    }
-    return '';
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        getCustomerList();
-      });
-    });
-  } */
-
   String _filter = 'Today';
-  List<String> _allFilters = ['All', 'Today', 'Tomorrow'];
+  final List<String> _allFilters = ['All', 'Today', 'Tomorrow'];
   int _filterIndex = 1;
 
   //List<Map<String, dynamic>> morningOrder = [];
@@ -119,8 +61,7 @@ class _ProductionPageState extends State<ProductionPage> {
 
     if (_filter == 'All') {
       // select * from order_header where produced = 0 and delivery_time
-      orderHeader = await _dbhelper.getOrderHeaderCondition('order_header',
-          ['delivery_time >= ?', 'delivery_time <= ?'], [startTime, endTime], false);
+      orderHeader = await _dbhelper.getOrderHeaderCondition('order_header', ['delivery_time >= ?', 'delivery_time <= ?'], [startTime, endTime], false);
     } else {
       /* if (_filter == 'today'){
         _date = DateTime.now();
@@ -131,13 +72,8 @@ class _ProductionPageState extends State<ProductionPage> {
       else {
         
       } */
-      currentDate =
-          '${_date.year.toString().padLeft(2, '0')}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
-      print(currentDate);
-      orderHeader = await _dbhelper.getOrderHeaderCondition(
-          'order_header',
-          ['delivery_time >= ?', 'delivery_time <= ?', 'delivery_date = ?'],
-          [startTime, endTime, currentDate], false);
+      currentDate = '${_date.year.toString().padLeft(2, '0')}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
+      orderHeader = await _dbhelper.getOrderHeaderCondition('order_header', ['delivery_time >= ?', 'delivery_time <= ?', 'delivery_date = ?'],[startTime, endTime, currentDate], false);
     }
     // add other filters for today, tomorrow, specific date
 
@@ -167,10 +103,20 @@ class _ProductionPageState extends State<ProductionPage> {
       // on checking an item check through morning order and set produced of item as 1
 
       for (int j = 0; j < orderDetails.length; j++) {
+
         String sellUnit = await _dbhelper.getUnitName(orderDetails[j]['sell_unit_id']);
         String itemName = await _dbhelper.getItemName(orderDetails[j]['item_id']);
         //bool check = productionItems.any((map) => map['item_id'] == targetItemId);
         //print('${orderDetails[j]['item_id']} : ${orderDetails[j]['delivery_date']}');
+
+        /* if (_filter == 'All' && productionTime == 'morning'){
+          print(_filter);
+          print('***************');
+          print('$itemName $sellUnit ${orderDetails[j]['item_id']} ${orderHeader[i]['delivery_date']} $productionTime');
+          count++;
+        }
+        print(count); */
+
         if (
           productionItems.any((map) => map['item_id'] == orderDetails[j]['item_id']) &&
           productionItems.any((map) => map['sell_unit'] == sellUnit) &&
@@ -182,7 +128,9 @@ class _ProductionPageState extends State<ProductionPage> {
             if (
               map['item_id'] == orderDetails[j]['item_id'] &&
               map['sell_unit'] == sellUnit &&
-              map['sell_weight'] == orderDetails[j]['sell_quantity']
+              map['sell_weight'] == orderDetails[j]['sell_quantity'] &&
+              map['date'] == orderHeader[i]['delivery_date'] &&
+              map['time'] == productionTime
             ) {
               map['quantity'] += orderDetails[j]['number_of_items'];
               map['produced'] = orderDetails[j]['produced'];
@@ -207,17 +155,15 @@ class _ProductionPageState extends State<ProductionPage> {
           String displayText = '';
 
           if (unitFormula == 'num_x_sellqnty') {
-            displayText =
-                '${(orderDetails[j]['number_of_items'] * orderDetails[j]['sell_quantity'])} $itemName';
+            displayText = '${(orderDetails[j]['number_of_items'] * orderDetails[j]['sell_quantity'])} $itemName';
           } else if (unitFormula == 'num_item_sellqnty') {
-            displayText =
-                '${orderDetails[j]['number_of_items']} $itemName (${orderDetails[j]['sell_quantity']} $sellUnit)';
+            displayText = '${orderDetails[j]['number_of_items']} $itemName (${orderDetails[j]['sell_quantity']} $sellUnit)';
           } else {
-            displayText =
-                '${(orderDetails[j]['number_of_items'] * orderDetails[j]['sell_quantity'])} $itemName ($sellUnit)';
+            displayText = '${(orderDetails[j]['number_of_items'] * orderDetails[j]['sell_quantity'])} $itemName ($sellUnit)';
           }
 
           productionItems.add({
+            'bill_num': orderDetails[j]['bill_number'],
             'item_id': orderDetails[j]['item_id'],
             'item_name': itemName,
             'sell_unit': sellUnit,
@@ -236,6 +182,8 @@ class _ProductionPageState extends State<ProductionPage> {
 
     if (_filter == 'All') {
       for (int i = 0; i < productionItems.length; i++){
+        /* print('//////');
+        print(productionItems[i]); */
         if (_allProductions.containsKey('${productionItems[i]['date']}:${productionItems[i]['time']}')){
           _allProductions['${productionItems[i]['date']}:${productionItems[i]['time']}'] = _allProductions['${productionItems[i]['date']}:${productionItems[i]['time']}'] + [productionItems[i]];
           //print([productionItems[i]]);
@@ -304,11 +252,11 @@ class _ProductionPageState extends State<ProductionPage> {
     return formattedDate;
   }
 
-  void display(){
+  /* void display(){
     _allProductions.forEach((key, value) {
       print('$key: $value');
     });
-  }
+  } */
 
   Widget dividerWithText(String text) {
     return Row(
@@ -477,6 +425,14 @@ class _ProductionPageState extends State<ProductionPage> {
                                 }
                                 final items = snapshot.data!;
                                 if (_filter == 'All') {
+                                  /* for (var map in items) {
+                                    print("Map:");
+                                    for (var entry in map.entries) {
+                                      print("${entry.key}: ${entry.value}");
+                                    }
+                                    print("");
+                                  }
+                                  print(items.length); */
                                   Map<String, dynamic> specificProduction = Map.fromEntries(
                                     _allProductions.entries.where((entry) => 
                                       entry.key.contains(':morning')
