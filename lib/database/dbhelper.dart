@@ -24,8 +24,8 @@ class DbHelper {
     final path = join(dbPath, 'nissybakesdb.db');
 
     // for deleting existing database......use carefully
-    //await deleteDatabase(path);
-    //debugPrint('Databse Deleted');
+    await deleteDatabase(path);
+    debugPrint('Databse Deleted');
 
     final exist = await databaseExists(path);
 
