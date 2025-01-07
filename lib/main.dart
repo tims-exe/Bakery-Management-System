@@ -4,6 +4,7 @@ import 'package:nissy_bakes_app/pages/delivery_page.dart';
 import 'package:nissy_bakes_app/pages/home_page.dart';
 import 'package:flutter/services.dart';
 import 'package:nissy_bakes_app/pages/items_page.dart';
+import 'package:nissy_bakes_app/pages/menuitems_page.dart';
 import 'package:nissy_bakes_app/pages/production_page.dart';
 import 'package:nissy_bakes_app/pages/splash_screen.dart';
 
@@ -37,6 +38,7 @@ class MyApp extends StatelessWidget {
         '/productionpage': (context) => const ProductionPage(),
         '/customers' : (context) => const CustomersPage(),
         '/deliverypage': (context) => const DeliveryPage(),
+        '/menuitemspage': (context) => const MenuitemsPage(),
       },
     );
   }
