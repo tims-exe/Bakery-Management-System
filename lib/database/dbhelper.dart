@@ -75,20 +75,26 @@ class DbHelper {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getSettings(String tableName) async {
+    final db = await database;
+    return await db.query(tableName);
+  }
+
   Future<String> getItemName(int id) async {
     final db = await database;
-    List<Map<String, dynamic>> item =  await db.rawQuery('SELECT item_name FROM item_master WHERE item_id = $id');
+    List<Map<String, dynamic>> item = await db
+        .rawQuery('SELECT item_name FROM item_master WHERE item_id = $id');
     return item[0]['item_name'];
   }
 
   Future<String> getCustomerName(int id) async {
     final db = await database;
-    List<Map<String, dynamic>> item =  await db.rawQuery('SELECT customer_name, reference FROM customer_master WHERE customer_id = $id');
+    List<Map<String, dynamic>> item = await db.rawQuery(
+        'SELECT customer_name, reference FROM customer_master WHERE customer_id = $id');
     String name = '';
-    if (item[0]['reference'] == ''){
+    if (item[0]['reference'] == '') {
       name = '${item[0]['customer_name']}';
-    }
-    else {
+    } else {
       name = '${item[0]['customer_name']} (${item[0]['reference']})';
     }
     return name;
@@ -96,25 +102,28 @@ class DbHelper {
 
   Future<String> getCustomerPhone(int id) async {
     final db = await database;
-    List<Map<String, dynamic>> item =  await db.rawQuery('SELECT customer_phone FROM customer_master WHERE customer_id = $id');
+    List<Map<String, dynamic>> item = await db.rawQuery(
+        'SELECT customer_phone FROM customer_master WHERE customer_id = $id');
 
     return item[0]['customer_phone'];
   }
 
   Future<String> getUnitName(int id) async {
     final db = await database;
-    List<Map<String, dynamic>> unit =  await db.rawQuery('SELECT unit_name FROM unit_master WHERE unit_id = $id');
+    List<Map<String, dynamic>> unit = await db
+        .rawQuery('SELECT unit_name FROM unit_master WHERE unit_id = $id');
     return unit[0]['unit_name'];
   }
 
   Future<String> getUnitFormula(int id) async {
     final db = await database;
-    List<Map<String, dynamic>> unit =  await db.rawQuery('SELECT print_formula FROM unit_master WHERE unit_id = $id');
+    List<Map<String, dynamic>> unit = await db
+        .rawQuery('SELECT print_formula FROM unit_master WHERE unit_id = $id');
     return unit[0]['print_formula'];
   }
 
-
-  Future<int> updateProduced(int value, String billNumberType, String billNumberFinancialYear, String billNumber) async {
+  Future<int> updateProduced(int value, String billNumberType,
+      String billNumberFinancialYear, String billNumber) async {
     final db = await database;
     return await db.rawUpdate('''
       UPDATE order_details
@@ -125,7 +134,8 @@ class DbHelper {
     ''', [value, billNumberType, billNumberFinancialYear, billNumber]);
   }
 
-  Future<int> updateProducedItem(String id, String sellqnty, String sellUnitId, startTime, endTime) async {
+  Future<int> updateProducedItem(
+      String id, String sellqnty, String sellUnitId, startTime, endTime) async {
     final db = await database;
     return await db.rawUpdate('''
       UPDATE order_details
@@ -144,8 +154,9 @@ class DbHelper {
       AND sell_unit_id = ?;
     ''', [startTime, endTime, id, sellqnty, sellUnitId]);
   }
-  
-  Future<int> updateProducedItemDate(String id, String sellqnty, String sellUnitId, String startTime, String endTime, String date) async {
+
+  Future<int> updateProducedItemDate(String id, String sellqnty,
+      String sellUnitId, String startTime, String endTime, String date) async {
     final db = await database;
     return await db.rawUpdate('''
       UPDATE order_details
@@ -207,6 +218,12 @@ class DbHelper {
     }
   }
 
+  //insert menu item
+  Future<int> insertItem(Map<String, dynamic> item) async {
+    final db = await database;
+    return await db.insert('item_master', item);
+  }
+
   // insert customer
   Future<int> insertCustomer(Map<String, dynamic> customer) async {
     final db = await database;
@@ -215,17 +232,21 @@ class DbHelper {
   }
 
   // update customer
-  Future<int> updateCustomer(Map<String, dynamic> customer, int customerID) async {
+  Future<int> updateCustomer(
+      Map<String, dynamic> customer, int customerID) async {
     final db = await database;
 
-    return await db.update('customer_master', customer, where: 'customer_id = ?', whereArgs: [customerID]);
+    return await db.update('customer_master', customer,
+        where: 'customer_id = ?', whereArgs: [customerID]);
   }
 
-  Future<int> updateOrderHeader(condition, value, billNumberType, billNumberFinancialYear, billNumber) async {
+  Future<int> updateOrderHeader(condition, value, billNumberType,
+      billNumberFinancialYear, billNumber) async {
     final db = await database;
-    return await db.rawUpdate('UPDATE order_header SET $condition = ? WHERE bill_number_type = ? AND bill_number_financial_year = ? AND bill_number = ?', [value, billNumberType, billNumberFinancialYear, billNumber]);
+    return await db.rawUpdate(
+        'UPDATE order_header SET $condition = ? WHERE bill_number_type = ? AND bill_number_financial_year = ? AND bill_number = ?',
+        [value, billNumberType, billNumberFinancialYear, billNumber]);
   }
-  
 
   //update order header
   Future<int> updateHeader(Map<String, dynamic> header, String whereClause,
@@ -240,27 +261,23 @@ class DbHelper {
   }
 
   // fetch order header
-  Future<List<Map<String, dynamic>>> getOrderHeader(String tablename, String filter) async {
+  Future<List<Map<String, dynamic>>> getOrderHeader(
+      String tablename, String filter) async {
     final db = await database;
     return await db.query(tablename, orderBy: filter);
   }
 
-
   // 2 conditions
   // order headers where time <= time specified and date = date specified and produced = 0
   // all order headers where time <= time specified and produced = 0
-  Future<List<Map<String, dynamic>>> getOrderHeaderCondition(String tableName, List<String> condition, List<dynamic>? args, bool sort) async {
+  Future<List<Map<String, dynamic>>> getOrderHeaderCondition(String tableName,
+      List<String> condition, List<dynamic>? args, bool sort) async {
     final db = await database;
     final whereClause = condition.join(' AND ');
-    if (sort){
-      return await db.query(
-        tableName,
-        where: whereClause,
-        whereArgs: args,
-        orderBy: 'delivery_time ASC'
-      );
-    }
-    else{
+    if (sort) {
+      return await db.query(tableName,
+          where: whereClause, whereArgs: args, orderBy: 'delivery_time ASC');
+    } else {
       return await db.query(
         tableName,
         where: whereClause,
@@ -268,7 +285,6 @@ class DbHelper {
       );
     }
   }
-
 
   // fetch order header
   Future<List<Map<String, dynamic>>> getOrderHeaderCustomer(
@@ -283,7 +299,9 @@ class DbHelper {
   }
 
   // fetch order items based on order id
-  Future<List<Map<String, dynamic>>> getOrderItems(String tableName, List<String> conditions, [List<dynamic>? conditionArgs]) async {
+  Future<List<Map<String, dynamic>>> getOrderItems(
+      String tableName, List<String> conditions,
+      [List<dynamic>? conditionArgs]) async {
     final db = await database;
     final whereClause = conditions.join(' AND ');
     return await db.query(
@@ -354,15 +372,9 @@ class DbHelper {
 
     String whereClause = 'customer_id = ?';
 
-    List<dynamic> whereArgs = [
-      customerID
-    ];
+    List<dynamic> whereArgs = [customerID];
 
-    await db.delete(
-      tableName,
-      where: whereClause,
-      whereArgs: whereArgs
-    );
+    await db.delete(tableName, where: whereClause, whereArgs: whereArgs);
 
     print('Customer from $tableName DELETED');
   }
