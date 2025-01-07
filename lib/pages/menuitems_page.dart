@@ -160,6 +160,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                       onPressed: () {
                         //Navigator.pushNamed(context, '/homepage');
                         Navigator.pop(context);
+                        Navigator.pop(context);
                       },
                       icon: const Icon(Icons.arrow_back),
                       iconSize: 30,
@@ -549,7 +550,11 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                       num wholesale = num.parse(value);
                                       num retail = wholesale +
                                           (wholesale *
-                                              num.parse(retailPercent.text));
+                                              num.parse(retailPercent.text) /
+                                              100);
+                                      if (retail is double && retail % 1 == 0) {
+                                        retail = retail.toInt();
+                                      }
                                       rPrice.text = retail.toString();
                                       mPrice.text = retail.toString();
                                     },
@@ -614,6 +619,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                               children: [
                                 Expanded(
                                   child: TextField(
+                                    obscureText: true,
                                     controller: retailPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
@@ -639,6 +645,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: TextField(
+                                    obscureText: true,
                                     controller: workPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
@@ -664,6 +671,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: TextField(
+                                    obscureText: true,
                                     controller: profitPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
