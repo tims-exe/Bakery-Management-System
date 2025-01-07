@@ -20,6 +20,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
     'hours',
     'days',
     'weeks',
+    'months',
     'years',
   ];
 
@@ -548,13 +549,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     ),
                                     onSubmitted: (value) {
                                       num wholesale = num.parse(value);
-                                      num retail = wholesale +
-                                          (wholesale *
-                                              num.parse(retailPercent.text) /
-                                              100);
-                                      if (retail is double && retail % 1 == 0) {
-                                        retail = retail.toInt();
-                                      }
+                                      num retail = (wholesale + (wholesale * num.parse(retailPercent.text) /100)).round();
+                                      
                                       rPrice.text = retail.toString();
                                       mPrice.text = retail.toString();
                                     },
@@ -583,6 +579,9 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                         borderSide: BorderSide(color: _orange),
                                       ),
                                     ),
+                                    onSubmitted: (value) {
+                                      mPrice.text = value;
+                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 10),
