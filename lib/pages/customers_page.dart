@@ -190,6 +190,7 @@ class _CustomersPageState extends State<CustomersPage> {
                       onPressed: () {
                         //Navigator.pushNamed(context, '/homepage');
                         Navigator.pop(context);
+                        Navigator.pop(context);
                       },
                       icon: const Icon(Icons.arrow_back),
                       iconSize: 30,
