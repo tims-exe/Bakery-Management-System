@@ -171,7 +171,6 @@ class _CustomersPageState extends State<CustomersPage> {
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -189,7 +188,8 @@ class _CustomersPageState extends State<CustomersPage> {
                     alignment: Alignment.centerLeft,
                     child: IconButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/homepage');
+                        //Navigator.pushNamed(context, '/homepage');
+                        Navigator.pop(context);
                       },
                       icon: const Icon(Icons.arrow_back),
                       iconSize: 30,
@@ -222,20 +222,34 @@ class _CustomersPageState extends State<CustomersPage> {
                                     currentCustomer = updatedCustomer;
                                     currentCustomerID = updatedCustomerID;
 
-                                    List<String> currentPhoneNumber = currentCustomer['customer_phone'].split(' ');
-                                    String currentIsoCode =  PhoneNumber.getISO2CodeByPrefix('+91')!;
-                                    if (currentPhoneNumber.length >= 2 && currentPhoneNumber[0][0] == '+'){
-                                      currentIsoCode =  PhoneNumber.getISO2CodeByPrefix(currentPhoneNumber[0])!;
-                                      phone.text = currentPhoneNumber.sublist(1).join(' ');
+                                    List<String> currentPhoneNumber =
+                                        currentCustomer['customer_phone']
+                                            .split(' ');
+                                    String currentIsoCode =
+                                        PhoneNumber.getISO2CodeByPrefix('+91')!;
+                                    if (currentPhoneNumber.length >= 2 &&
+                                        currentPhoneNumber[0][0] == '+') {
+                                      currentIsoCode =
+                                          PhoneNumber.getISO2CodeByPrefix(
+                                              currentPhoneNumber[0])!;
+                                      phone.text = currentPhoneNumber
+                                          .sublist(1)
+                                          .join(' ');
+                                    } else {
+                                      phone.text =
+                                          currentCustomer['customer_phone'];
                                     }
-                                    else{
-                                      phone.text = currentCustomer['customer_phone'];
-                                    }
-                                    phoneNumberIsoCode = PhoneNumber(isoCode: currentIsoCode);
-                                    name.text = currentCustomer['customer_name'];
-                                    reference.text = currentCustomer['reference'];
-                                    address.text = currentCustomer['customer_address'];
-                                    balance.text = currentCustomer['customer_balance'].toString();
+                                    phoneNumberIsoCode =
+                                        PhoneNumber(isoCode: currentIsoCode);
+                                    name.text =
+                                        currentCustomer['customer_name'];
+                                    reference.text =
+                                        currentCustomer['reference'];
+                                    address.text =
+                                        currentCustomer['customer_address'];
+                                    balance.text =
+                                        currentCustomer['customer_balance']
+                                            .toString();
                                     _isEdit = true;
                                   },
                                 );
@@ -347,7 +361,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                                   Icons.phone,
                                                   size: 20,
                                                 ),
-                                                Text('  :  ${customer['customer_phone']}')
+                                                Text(
+                                                    '  :  ${customer['customer_phone']}')
                                               ],
                                             )
                                           else
@@ -365,25 +380,40 @@ class _CustomersPageState extends State<CustomersPage> {
                                       onTap: () {
                                         setState(() {
                                           _isEdit = true;
-                                          List<String> currentPhoneNumber = customer['customer_phone'].split(' ');
-                                          String currentIsoCode =  PhoneNumber.getISO2CodeByPrefix('+91')!;
-                                          if (currentPhoneNumber.length >= 2 && currentPhoneNumber[0][0] == '+'){
-                                            currentIsoCode =  PhoneNumber.getISO2CodeByPrefix(currentPhoneNumber[0])!;
-                                            phone.text = currentPhoneNumber.sublist(1).join(' ');
+                                          List<String> currentPhoneNumber =
+                                              customer['customer_phone']
+                                                  .split(' ');
+                                          String currentIsoCode =
+                                              PhoneNumber.getISO2CodeByPrefix(
+                                                  '+91')!;
+                                          if (currentPhoneNumber.length >= 2 &&
+                                              currentPhoneNumber[0][0] == '+') {
+                                            currentIsoCode =
+                                                PhoneNumber.getISO2CodeByPrefix(
+                                                    currentPhoneNumber[0])!;
+                                            phone.text = currentPhoneNumber
+                                                .sublist(1)
+                                                .join(' ');
+                                          } else {
+                                            phone.text =
+                                                customer['customer_phone'];
                                           }
-                                          else{
-                                            phone.text = customer['customer_phone'];
-                                          }
-                                          
+
                                           //String num = PhoneNumber.getISO2CodeByPrefix("+91")!;
-                                          phoneNumberIsoCode = PhoneNumber(isoCode: currentIsoCode);
+                                          phoneNumberIsoCode = PhoneNumber(
+                                              isoCode: currentIsoCode);
                                           print('*#*#*#  $phoneNumberIsoCode');
-                                          currentCustomerID = customer['customer_id'];
+                                          currentCustomerID =
+                                              customer['customer_id'];
                                           name.text = customer['customer_name'];
-                                          reference.text = customer['reference'];
-                                          address.text = customer['customer_address'];
+                                          reference.text =
+                                              customer['reference'];
+                                          address.text =
+                                              customer['customer_address'];
                                           //phone.text = currentPhoneNumber[1];
-                                          balance.text = customer['customer_balance'].toString();
+                                          balance.text =
+                                              customer['customer_balance']
+                                                  .toString();
                                         });
                                       },
                                     ),
@@ -579,51 +609,59 @@ class _CustomersPageState extends State<CustomersPage> {
                                       style: TextStyle(fontSize: 18),
                                     ),
                                     SizedBox(
-                                      width: 250,
-                                      child: InternationalPhoneNumberInput(
-                                        onInputChanged: (value) {
-                                          print(value.dialCode);
-                                          if (value.dialCode != null){
-                                            phoneNumberDialCode = value.dialCode!;
-                                          } 
-                                          else{
-                                            phoneNumberDialCode = '+91';
-                                          }
-                                        },
-                                        initialValue: phoneNumberIsoCode,
-                                        selectorConfig: const SelectorConfig(
-                                          selectorType: PhoneInputSelectorType.DIALOG,
-                                          useBottomSheetSafeArea: true,
-                                        ),
-                                        ignoreBlank: false,
-                                        textFieldController: phone,
-                                        formatInput: true,
-                                        keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
-                                        inputDecoration: InputDecoration(
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                            borderSide: const BorderSide(
-                                              color: Colors.grey,
+                                        width: 250,
+                                        child: InternationalPhoneNumberInput(
+                                          onInputChanged: (value) {
+                                            print(value.dialCode);
+                                            if (value.dialCode != null) {
+                                              phoneNumberDialCode =
+                                                  value.dialCode!;
+                                            } else {
+                                              phoneNumberDialCode = '+91';
+                                            }
+                                          },
+                                          initialValue: phoneNumberIsoCode,
+                                          selectorConfig: const SelectorConfig(
+                                            selectorType:
+                                                PhoneInputSelectorType.DIALOG,
+                                            useBottomSheetSafeArea: true,
+                                          ),
+                                          ignoreBlank: false,
+                                          textFieldController: phone,
+                                          formatInput: true,
+                                          keyboardType: const TextInputType
+                                              .numberWithOptions(
+                                              signed: true, decimal: true),
+                                          inputDecoration: InputDecoration(
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: const BorderSide(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide:
+                                                  BorderSide(color: _orange),
                                             ),
                                           ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                            borderSide: BorderSide(color: _orange),
-                                          ),
-                                        ),
-                                        onSaved: (PhoneNumber number) {
-                                          print('On Saved: $number, ${phone.text}');
-                                        },
-                                        onFieldSubmitted: (value) {
-                                          print('*********************$phoneNumberIsoCode');
-                                          /* print('submitted');
+                                          onSaved: (PhoneNumber number) {
+                                            print(
+                                                'On Saved: $number, ${phone.text}');
+                                          },
+                                          onFieldSubmitted: (value) {
+                                            print(
+                                                '*********************$phoneNumberIsoCode');
+                                            /* print('submitted');
                                           String ph = "+91 9495669555";
                                           String num = PhoneNumber.getISO2CodeByPrefix("+91")!;
                                           print(num); */
-                                        },
-                                      )
-                                      
-                                      /* IntlPhoneField(
+                                          },
+                                        )
+
+                                        /* IntlPhoneField(
                                         controller: phone,
                                         keyboardType: TextInputType.phone,
                                         decoration: InputDecoration(
@@ -647,8 +685,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                           print(phone.text);
                                         },
                                       ) */
-                                      
-                                      /* TextField(
+
+                                        /* TextField(
                                         controller: phone,
                                         keyboardType: TextInputType
                                             .number, // Only shows number keypad
@@ -672,7 +710,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                           hintText: '...',
                                         ),
                                       ), */
-                                    )
+                                        )
                                   ],
                                 ),
                                 const SizedBox(
@@ -750,24 +788,31 @@ class _CustomersPageState extends State<CustomersPage> {
                                   child: MaterialButton(
                                     onPressed: () {
                                       print(currentCustomerID);
-                                      if (name.text != '' && balance.text != '') {
-                                        currentCustomer['customer_name'] = name.text;
-                                        currentCustomer['reference'] = reference.text;
-                                        currentCustomer['customer_address'] = address.text;
-                                        currentCustomer['customer_balance'] = num.parse(balance.text);
-                                        if (phone.text.isNotEmpty){
-                                          currentCustomer['customer_phone'] = '$phoneNumberDialCode ${phone.text}';
+                                      if (name.text != '' &&
+                                          balance.text != '') {
+                                        currentCustomer['customer_name'] =
+                                            name.text;
+                                        currentCustomer['reference'] =
+                                            reference.text;
+                                        currentCustomer['customer_address'] =
+                                            address.text;
+                                        currentCustomer['customer_balance'] =
+                                            num.parse(balance.text);
+                                        if (phone.text.isNotEmpty) {
+                                          currentCustomer['customer_phone'] =
+                                              '$phoneNumberDialCode ${phone.text}';
+                                        } else {
+                                          currentCustomer['customer_phone'] =
+                                              phone.text;
                                         }
-                                        else{
-                                          currentCustomer['customer_phone'] = phone.text;
-                                        }
-                                        print(currentCustomer['customer_phone']);
+                                        print(
+                                            currentCustomer['customer_phone']);
                                         print(phoneNumberDialCode);
                                         if (_isEdit) {
-                                            editCustomer();
-                                          } else {
-                                            addNewCustomer();
-                                          }
+                                          editCustomer();
+                                        } else {
+                                          addNewCustomer();
+                                        }
                                       } else {
                                         showWarning('Enter Customer');
                                       }

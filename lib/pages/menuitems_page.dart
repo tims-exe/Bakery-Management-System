@@ -34,7 +34,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                     alignment: Alignment.centerLeft,
                     child: IconButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/homepage');
+                        //Navigator.pushNamed(context, '/homepage');
+                        Navigator.pop(context);
                       },
                       icon: const Icon(Icons.arrow_back),
                       iconSize: 30,
