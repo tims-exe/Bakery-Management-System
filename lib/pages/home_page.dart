@@ -252,7 +252,7 @@ class _HomePageState extends State<HomePage> {
                                       _currentOrder = updatedOrder;
                                     });
                                   }),
-                            ),
+                            ), 
                           );
                         },
                         elevation: 0,

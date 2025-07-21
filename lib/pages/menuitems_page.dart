@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nissy_bakes_original/database/dbhelper.dart';
+import 'package:nissy_bakes_original/components/search_menu_item.dart'; // Add this import
 
 class MenuitemsPage extends StatefulWidget {
   const MenuitemsPage({super.key});
@@ -16,13 +17,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
   List<Map<String, dynamic>> _categories = [];
   List<Map<String, dynamic>> _units = [];
   List<Map<String, dynamic>> _settings = [];
-  final List<String> _duration = [
-    'hours',
-    'days',
-    'weeks',
-    'months',
-    'years',
-  ];
+  final List<String> _duration = ['hours', 'days', 'weeks', 'months', 'years'];
 
   Map<String, dynamic> selectedCategory = {};
   Map<String, dynamic> selectedBaseUnit = {};
@@ -46,6 +41,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
   TextEditingController comments = TextEditingController();
 
   bool? refrigerate = false;
+  bool _isEditing = false;
+  int? _editingItemId;
 
   void loadData() async {
     _categories = await _dbhelper.getCategory('item_category');
@@ -62,7 +59,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
 
   String getCurrentDateTime() {
     final DateTime now = DateTime.now();
-    final String formattedDateTime = '${now.year.toString().padLeft(4, '0')}-'
+    final String formattedDateTime =
+        '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:'
@@ -84,7 +82,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
         selectedCategory.isNotEmpty &&
         selectedBaseUnit.isNotEmpty &&
         selectedSellUnit.isNotEmpty) {
-      Map<String, dynamic> newItem = {
+      Map<String, dynamic> itemData = {
         'item_name': name.text,
         'category_id': selectedCategory['category_id'],
         'base_quantity': baseQnty.text,
@@ -102,17 +100,31 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
         'comments': comments.text,
         'modified_datetime': getCurrentDateTime(),
       };
-      print(newItem);
-      await _dbhelper.insertItem(newItem);
-      print('item inserted');
-      Fluttertoast.showToast(
-        msg: "${name.text} Added to Menu",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+
+      if (_isEditing && _editingItemId != null) {
+        await _dbhelper.updateItem(itemData, _editingItemId!);
+        print('item updated');
+        Fluttertoast.showToast(
+          msg: "${name.text} Updated",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      } else {
+        await _dbhelper.insertItem(itemData);
+        print('item inserted');
+        Fluttertoast.showToast(
+          msg: "${name.text} Added to Menu",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+
       setState(() {
         name.clear();
         baseQnty.clear();
@@ -134,6 +146,130 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
     }
   }
 
+  void populateFields(Map<String, dynamic> item) {
+    setState(() {
+      _isEditing = true;
+      _editingItemId = item['item_id'];
+      name.text = item['item_name'] ?? '';
+      baseQnty.text = item['base_quantity']?.toString() ?? '';
+      sellQnty.text = item['sell_quantity']?.toString() ?? '';
+      wPrice.text = item['price_wholesale']?.toString() ?? '';
+      rPrice.text = item['price_retail']?.toString() ?? '';
+      mPrice.text = item['menu_price']?.toString() ?? '';
+      retailPercent.text = item['retail_price_percentage']?.toString() ?? '';
+      workPercent.text = item['work_cost_percentage']?.toString() ?? '';
+      profitPercent.text = item['profit_percentage']?.toString() ?? '';
+      comments.text = item['comments'] ?? '';
+      refrigerate = item['refrigerate'] == 1;
+
+      // Parse best_before (e.g., "5 days" -> "5" and "days")
+      String bestBeforeStr = item['best_before'] ?? '';
+      if (bestBeforeStr.isNotEmpty) {
+        List<String> parts = bestBeforeStr.split(' ');
+        if (parts.length >= 2) {
+          bestBefore.text = parts[0];
+          selectedDuration = parts[1];
+        }
+      }
+
+      // Set selected category
+      selectedCategory = {
+        'category_id': item['category_id'],
+        'category_name': item['category_name'],
+      };
+
+      // Set selected units
+      selectedBaseUnit = {
+        'unit_id': item['base_unit_id'],
+        'unit_name': item['base_unit_name'],
+      };
+
+      selectedSellUnit = {
+        'unit_id': item['sell_unit_id'],
+        'unit_name': item['sell_unit_name'],
+      };
+    });
+  }
+
+  void clearFields() {
+    setState(() {
+      _isEditing = false;
+      _editingItemId = null;
+      name.clear();
+      baseQnty.clear();
+      sellQnty.clear();
+      wPrice.clear();
+      rPrice.clear();
+      mPrice.clear();
+      bestBefore.clear();
+      comments.clear();
+      refrigerate = false;
+      selectedCategory.clear();
+      selectedBaseUnit.clear();
+      selectedSellUnit.clear();
+      selectedDuration = null;
+
+      // Reset percentage fields to default values from settings
+      retailPercent.text =
+          _settings.isNotEmpty
+              ? _settings[0]['retail_price_percentage'].toString()
+              : '';
+      workPercent.text =
+          _settings.isNotEmpty
+              ? _settings[0]['work_cost_percentage'].toString()
+              : '';
+      profitPercent.text =
+          _settings.isNotEmpty
+              ? _settings[0]['profit_percentage'].toString()
+              : '';
+    });
+  }
+
+  void deleteModal(int itemId, String name) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                height: 30,
+                alignment: Alignment.bottomCenter,
+                child: const Text(
+                  'Delete Item ?',
+                  style: TextStyle(fontSize: 20),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                color: Colors.red,
+                iconSize: 30,
+                onPressed: () async {
+                  await _dbhelper.deleteItem('item_master', itemId);
+                  setState(() {
+                    Navigator.of(context).pop();
+                    Fluttertoast.showToast(
+                      msg: "$name Deleted",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
+                      fontSize: 16.0,
+                    );
+                    clearFields();
+                  });
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -146,8 +282,12 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Padding(
-          padding:
-              const EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 20),
+          padding: const EdgeInsets.only(
+            top: 20,
+            bottom: 20,
+            left: 20,
+            right: 20,
+          ),
           child: Column(
             children: [
               Row(
@@ -170,20 +310,26 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                   // title
                   Text(
                     'Menu Item',
-                    style: TextStyle(
-                      fontSize: 30,
-                      color: _orange,
-                    ),
+                    style: TextStyle(fontSize: 30, color: _orange),
                   ),
                   // search button
                   Padding(
                     padding: const EdgeInsets.only(right: 10),
                     child: IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.search,
-                        size: 30,
-                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => SearchMenuItem(
+                                  onItemSelected: (selectedItem) {
+                                    populateFields(selectedItem);
+                                  },
+                                ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.search, size: 30),
                     ),
                   ),
                 ],
@@ -191,15 +337,12 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
               // heading line
               Padding(
                 padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
-                child: Divider(
-                  thickness: 2.5,
-                  color: _grey,
-                  height: 35,
-                ),
+                child: Divider(thickness: 2.5, color: _grey, height: 35),
               ),
               // Two sections with vertical divider
               SizedBox(
-                height: MediaQuery.of(context).size.height -
+                height:
+                    MediaQuery.of(context).size.height -
                     150, // Adjust height as needed
                 child: Row(
                   children: [
@@ -209,10 +352,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                         children: [
                           Text(
                             'Item Details',
-                            style: TextStyle(
-                              color: _orange,
-                              fontSize: 18,
-                            ),
+                            style: TextStyle(color: _orange, fontSize: 18),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(10),
@@ -225,11 +365,12 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     decoration: InputDecoration(
                                       hoverColor: _orange,
                                       border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       labelText: 'Name',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -238,7 +379,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                   ),
                                 ),
                                 const SizedBox(
-                                    width: 10), // Add spacing between fields
+                                  width: 10,
+                                ), // Add spacing between fields
                                 SizedBox(
                                   width: 200,
                                   height: 55,
@@ -261,28 +403,26 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                 itemBuilder: (context, index) {
                                                   return ListTile(
                                                     title: Text(
-                                                      _categories[index]
-                                                          ['category_name'],
+                                                      _categories[index]['category_name'],
                                                       style: const TextStyle(
-                                                          fontSize: 18),
-                                                      textAlign: TextAlign
-                                                          .center, // Aligns the text to the center
+                                                        fontSize: 18,
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign
+                                                              .center, // Aligns the text to the center
                                                     ),
                                                     onTap: () {
                                                       setState(() {
                                                         selectedCategory = {
                                                           'category_id':
-                                                              _categories[index]
-                                                                  [
-                                                                  'category_id'],
+                                                              _categories[index]['category_id'],
                                                           'category_name':
-                                                              _categories[index]
-                                                                  [
-                                                                  'category_name'],
+                                                              _categories[index]['category_name'],
                                                         };
                                                       });
-                                                      Navigator.of(context)
-                                                          .pop();
+                                                      Navigator.of(
+                                                        context,
+                                                      ).pop();
                                                     },
                                                   );
                                                 },
@@ -320,18 +460,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: baseQnty,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Base Qnty',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -367,10 +510,10 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                 itemBuilder: (context, index) {
                                                   return ListTile(
                                                     title: Text(
-                                                      _units[index]
-                                                          ['unit_name'],
+                                                      _units[index]['unit_name'],
                                                       style: const TextStyle(
-                                                          fontSize: 18),
+                                                        fontSize: 18,
+                                                      ),
                                                       textAlign:
                                                           TextAlign.center,
                                                     ),
@@ -378,23 +521,20 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                       setState(() {
                                                         selectedBaseUnit = {
                                                           'unit_id':
-                                                              _units[index]
-                                                                  ['unit_id'],
+                                                              _units[index]['unit_id'],
                                                           'unit_name':
-                                                              _units[index]
-                                                                  ['unit_name'],
+                                                              _units[index]['unit_name'],
                                                         };
                                                         selectedSellUnit = {
                                                           'unit_id':
-                                                              _units[index]
-                                                                  ['unit_id'],
+                                                              _units[index]['unit_id'],
                                                           'unit_name':
-                                                              _units[index]
-                                                                  ['unit_name'],
+                                                              _units[index]['unit_name'],
                                                         };
                                                       });
-                                                      Navigator.of(context)
-                                                          .pop();
+                                                      Navigator.of(
+                                                        context,
+                                                      ).pop();
                                                     },
                                                   );
                                                 },
@@ -425,18 +565,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: sellQnty,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Sell Qnty',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -467,10 +610,10 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                 itemBuilder: (context, index) {
                                                   return ListTile(
                                                     title: Text(
-                                                      _units[index]
-                                                          ['unit_name'],
+                                                      _units[index]['unit_name'],
                                                       style: const TextStyle(
-                                                          fontSize: 18),
+                                                        fontSize: 18,
+                                                      ),
                                                       textAlign:
                                                           TextAlign.center,
                                                     ),
@@ -478,15 +621,14 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                       setState(() {
                                                         selectedSellUnit = {
                                                           'unit_id':
-                                                              _units[index]
-                                                                  ['unit_id'],
+                                                              _units[index]['unit_id'],
                                                           'unit_name':
-                                                              _units[index]
-                                                                  ['unit_name'],
+                                                              _units[index]['unit_name'],
                                                         };
                                                       });
-                                                      Navigator.of(context)
-                                                          .pop();
+                                                      Navigator.of(
+                                                        context,
+                                                      ).pop();
                                                     },
                                                   );
                                                 },
@@ -516,10 +658,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                           ),
                           Text(
                             'Price Details',
-                            style: TextStyle(
-                              color: _orange,
-                              fontSize: 18,
-                            ),
+                            style: TextStyle(color: _orange, fontSize: 18),
                           ),
                           Padding(
                             padding: EdgeInsets.all(10),
@@ -530,18 +669,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: wPrice,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Wholesale Price',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -549,8 +691,15 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     ),
                                     onSubmitted: (value) {
                                       num wholesale = num.parse(value);
-                                      num retail = (wholesale + (wholesale * num.parse(retailPercent.text) /100)).round();
-                                      
+                                      num retail =
+                                          (wholesale +
+                                                  (wholesale *
+                                                      num.parse(
+                                                        retailPercent.text,
+                                                      ) /
+                                                      100))
+                                              .round();
+
                                       rPrice.text = retail.toString();
                                       mPrice.text = retail.toString();
                                     },
@@ -562,18 +711,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: rPrice,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Retail Price',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -590,18 +742,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: mPrice,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Menu Price',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -622,18 +777,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: retailPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Retail Price Percentage',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -648,18 +806,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: workPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Work Cost Percentage',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -674,18 +835,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     controller: profitPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*$')),
+                                        RegExp(r'^\d*\.?\d*$'),
+                                      ),
                                     ],
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       labelText: 'Profit Percentage',
-                                      labelStyle:
-                                          const TextStyle(color: Colors.black),
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(color: _orange),
@@ -696,9 +860,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                               ],
                             ),
                           ),
-                          const SizedBox(
-                            height: 20,
-                          ),
+                          const SizedBox(height: 20),
                           Padding(
                             padding: EdgeInsets.all(10),
                             child: Row(
@@ -715,9 +877,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                           color: _orange,
                                         ),
                                       ),
-                                      const SizedBox(
-                                        height: 10,
-                                      ),
+                                      const SizedBox(height: 10),
                                       Row(
                                         children: [
                                           Expanded(
@@ -727,38 +887,40 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                               child: TextField(
                                                 controller: bestBefore,
                                                 keyboardType:
-                                                    const TextInputType
-                                                        .numberWithOptions(
-                                                        decimal: true),
+                                                    const TextInputType.numberWithOptions(
+                                                      decimal: true,
+                                                    ),
                                                 inputFormatters: [
-                                                  FilteringTextInputFormatter
-                                                      .allow(RegExp(
-                                                          r'^\d*\.?\d*$')),
+                                                  FilteringTextInputFormatter.allow(
+                                                    RegExp(r'^\d*\.?\d*$'),
+                                                  ),
                                                 ],
                                                 decoration: InputDecoration(
                                                   border: OutlineInputBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            12),
+                                                          12,
+                                                        ),
                                                   ),
                                                   labelText: 'Value',
                                                   labelStyle: const TextStyle(
-                                                      color: Colors.black),
+                                                    color: Colors.black,
+                                                  ),
                                                   focusedBorder:
                                                       OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                    borderSide: BorderSide(
-                                                        color: _orange),
-                                                  ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        borderSide: BorderSide(
+                                                          color: _orange,
+                                                        ),
+                                                      ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(
-                                            width: 10,
-                                          ),
+                                          const SizedBox(width: 10),
                                           SizedBox(
                                             width: 150,
                                             height: 55,
@@ -766,8 +928,9 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                               onPressed: () {
                                                 showDialog(
                                                   context: context,
-                                                  builder:
-                                                      (BuildContext context) {
+                                                  builder: (
+                                                    BuildContext context,
+                                                  ) {
                                                     return AlertDialog(
                                                       backgroundColor:
                                                           Colors.white,
@@ -782,29 +945,30 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                           shrinkWrap: true,
                                                           itemCount:
                                                               _duration.length,
-                                                          itemBuilder:
-                                                              (context, index) {
+                                                          itemBuilder: (
+                                                            context,
+                                                            index,
+                                                          ) {
                                                             return ListTile(
                                                               title: Text(
-                                                                _duration[
-                                                                    index],
+                                                                _duration[index],
                                                                 textAlign:
                                                                     TextAlign
                                                                         .center,
                                                                 style:
                                                                     const TextStyle(
-                                                                        fontSize:
-                                                                            18),
+                                                                      fontSize:
+                                                                          18,
+                                                                    ),
                                                               ),
                                                               onTap: () {
                                                                 setState(() {
                                                                   selectedDuration =
-                                                                      _duration[
-                                                                          index];
+                                                                      _duration[index];
                                                                 });
                                                                 Navigator.of(
-                                                                        context)
-                                                                    .pop();
+                                                                  context,
+                                                                ).pop();
                                                               },
                                                             );
                                                           },
@@ -832,13 +996,11 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                             ),
                                           ),
                                         ],
-                                      )
+                                      ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -851,9 +1013,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                           color: _orange,
                                         ),
                                       ),
-                                      const SizedBox(
-                                        height: 10,
-                                      ),
+                                      const SizedBox(height: 10),
                                       Row(
                                         children: [
                                           Expanded(
@@ -865,35 +1025,38 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                 decoration: InputDecoration(
                                                   hoverColor: _orange,
                                                   border: OutlineInputBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12)),
-                                                  labelText: '...',
-                                                  labelStyle: const TextStyle(
-                                                      color: Colors.black),
-                                                  focusedBorder:
-                                                      OutlineInputBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            12),
-                                                    borderSide: BorderSide(
-                                                        color: _orange),
+                                                          12,
+                                                        ),
                                                   ),
+                                                  labelText: '...',
+                                                  labelStyle: const TextStyle(
+                                                    color: Colors.black,
+                                                  ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        borderSide: BorderSide(
+                                                          color: _orange,
+                                                        ),
+                                                      ),
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ],
-                                      )
+                                      ),
                                     ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(
-                            height: 10,
-                          ),
+                          const SizedBox(height: 10),
                           Padding(
                             padding: EdgeInsets.all(10),
                             child: Row(
@@ -907,13 +1070,10 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     children: [
                                       const Text(
                                         'Refrigerate : ',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                        ),
+                                        style: TextStyle(fontSize: 18),
                                       ),
                                       Transform.scale(
-                                        scale:
-                                            1.5, // Change this value to adjust the size
+                                        scale: 1.5,
                                         child: Checkbox(
                                           value: refrigerate,
                                           activeColor: _lightOrange,
@@ -923,32 +1083,84 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                             });
                                           },
                                         ),
-                                      )
+                                      ),
                                     ],
                                   ),
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    handleSave();
-                                  },
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: _lightOrange,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
+                                Row(
+                                  children: [
+                                    if (_isEditing) ...[
+                                      IconButton(
+                                        onPressed: () {
+                                          deleteModal(
+                                            _editingItemId!,
+                                            name.text,
+                                          );
+                                        },
+                                        icon: const Icon(Icons.delete),
+                                        color: Colors.red,
+                                        iconSize: 30,
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: Colors.red
+                                              .withOpacity(0.1),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          minimumSize: const Size(55, 55),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                    ],
+                                    TextButton(
+                                      onPressed: () {
+                                        clearFields();
+                                      },
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: _grey,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        minimumSize: const Size(150, 55),
+                                      ),
+                                      child: const Text(
+                                        'Clear',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 18,
+                                        ),
+                                      ),
                                     ),
-                                    minimumSize: const Size(150, 55),
-                                  ),
-                                  child: const Text(
-                                    'Save',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 18,
+                                    const SizedBox(width: 10),
+                                    TextButton(
+                                      onPressed: () {
+                                        handleSave();
+                                      },
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: _lightOrange,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        minimumSize: const Size(150, 55),
+                                      ),
+                                      child: Text(
+                                        _isEditing ? 'Update' : 'Save',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 18,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                )
+                                  ],
+                                ),
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
