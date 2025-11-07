@@ -49,11 +49,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   bool checkCurrentOrder(Map item) {
-    if (
-      _currentOrder.any((index) => index['item'] == item['item_name']) &&
-      _currentOrder.any((index) => index['sell_unit_id'] == item['sell_unit_id']) && 
-      _currentOrder.any((index) => index['sell_qnty'] == item['sell_quantity'])
-    ) {
+    if (_currentOrder.any((index) => index['item'] == item['item_name']) &&
+        _currentOrder.any(
+          (index) => index['sell_unit_id'] == item['sell_unit_id'],
+        ) &&
+        _currentOrder.any(
+          (index) => index['sell_qnty'] == item['sell_quantity'],
+        )) {
       return false;
     } else {
       return true;
@@ -62,11 +64,9 @@ class _HomePageState extends State<HomePage> {
 
   void updateCurrentOrderNo(Map item) {
     for (int i = 0; i < _currentOrder.length; i++) {
-      if (
-        _currentOrder[i]['item'] == item['item_name'] && 
-        _currentOrder[i]['sell_unit_id'] == item['sell_unit_id'] &&
-        _currentOrder[i]['sell_qnty'] == item['sell_quantity']
-      ) {
+      if (_currentOrder[i]['item'] == item['item_name'] &&
+          _currentOrder[i]['sell_unit_id'] == item['sell_unit_id'] &&
+          _currentOrder[i]['sell_qnty'] == item['sell_quantity']) {
         _currentOrder[i]['no']++;
       }
     }
@@ -158,54 +158,56 @@ class _HomePageState extends State<HomePage> {
                   // logo
                   child: Container(
                     margin: const EdgeInsets.only(top: 20),
-                    child: Image.asset(
-                      'assets/home_logo.png',
-                      width: 120,
-                    ),
+                    child: Image.asset('assets/logo.jpeg', width: 120),
                   ),
                 ),
                 // All Categories
                 Expanded(
-                  child: category.isEmpty
-                      ? const Center(
-                          child: CircularProgressIndicator(),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: ListView.builder(
-                            itemCount: category.length,
-                            itemBuilder: (context, index) {
-                              final ctgy = category[index];
-                              return SizedBox(
-                                height: 60,
-                                child: ListTile(
-                                  title: TextButton(
-                                    style: TextButton.styleFrom(
+                  child:
+                      category.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: ListView.builder(
+                              itemCount: category.length,
+                              itemBuilder: (context, index) {
+                                final ctgy = category[index];
+                                return SizedBox(
+                                  height: 60,
+                                  child: ListTile(
+                                    title: TextButton(
+                                      style: TextButton.styleFrom(
                                         // beware of index value. if category_id changes (if row gets deleted)
-                                        backgroundColor: _category - 1 == index
-                                            ? _orange
-                                            : Colors.white,
+                                        backgroundColor:
+                                            _category - 1 == index
+                                                ? _orange
+                                                : Colors.white,
                                         minimumSize: const Size(50, 50),
                                         shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10))),
-                                    child: Text(
-                                      ctgy['category_name'],
-                                      style: const TextStyle(
-                                          color: Colors.black, fontSize: 16),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        ctgy['category_name'],
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _category = ctgy['category_id'];
+                                        });
+                                      },
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _category = ctgy['category_id'];
-                                      });
-                                    },
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                )
+                ),
               ],
             ),
           ),
@@ -224,14 +226,16 @@ class _HomePageState extends State<HomePage> {
                 // heading
                 Padding(
                   padding: const EdgeInsets.only(
-                      top: 20, bottom: 10, left: 15, right: 15),
+                    top: 20,
+                    bottom: 10,
+                    left: 15,
+                    right: 15,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(
-                        width: 70,
-                      ),
+                      const SizedBox(width: 70),
                       const Text(
                         'Menu',
                         style: TextStyle(
@@ -245,21 +249,20 @@ class _HomePageState extends State<HomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => SearchItem(
-                                  getOrder: _currentOrder,
-                                  onSave: (updatedOrder) {
-                                    setState(() {
-                                      _currentOrder = updatedOrder;
-                                    });
-                                  }),
-                            ), 
+                              builder:
+                                  (context) => SearchItem(
+                                    getOrder: _currentOrder,
+                                    onSave: (updatedOrder) {
+                                      setState(() {
+                                        _currentOrder = updatedOrder;
+                                      });
+                                    },
+                                  ),
+                            ),
                           );
                         },
                         elevation: 0,
-                        child: const Icon(
-                          Icons.search,
-                          size: 35,
-                        ),
+                        child: const Icon(Icons.search, size: 35),
                       ),
                     ],
                   ),
@@ -278,7 +281,10 @@ class _HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.only(left: 40, right: 40),
                     child: FutureBuilder<List<Map<String, dynamic>>>(
                       future: _dbhelper.getItems(
-                          'item_master', 'category_id = ?', [_category]),
+                        'item_master',
+                        'category_id = ?',
+                        [_category],
+                      ),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -294,9 +300,7 @@ class _HomePageState extends State<HomePage> {
                         }
 
                         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Center(
-                            child: Text('No items found'),
-                          );
+                          return const Center(child: Text('No items found'));
                         }
                         final items = snapshot.data!;
                         return ListView.builder(
@@ -320,8 +324,9 @@ class _HomePageState extends State<HomePage> {
                                       child: Text(
                                         item['item_name'],
                                         style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.normal),
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.normal,
+                                        ),
                                       ),
                                     ),
                                     // quantity
@@ -334,18 +339,15 @@ class _HomePageState extends State<HomePage> {
                                             fontWeight: FontWeight.normal,
                                           ),
                                         ),
-                                        const SizedBox(
-                                          width: 50,
-                                        ),
+                                        const SizedBox(width: 50),
                                         const Text(
                                           ':',
                                           style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.normal),
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.normal,
+                                          ),
                                         ),
-                                        const SizedBox(
-                                          width: 50,
-                                        ),
+                                        const SizedBox(width: 50),
                                         // price
                                         Text(
                                           '₹${item['menu_price']}',
@@ -400,8 +402,11 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         const Padding(
-                          padding:
-                              EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                          padding: EdgeInsets.only(
+                            left: 20,
+                            right: 20,
+                            bottom: 20,
+                          ),
                           child: Divider(
                             thickness: 1,
                             color: Colors.grey,
@@ -419,8 +424,9 @@ class _HomePageState extends State<HomePage> {
                                   itemBuilder: (context, index) {
                                     final item = _currentOrder[index];
                                     return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -430,8 +436,9 @@ class _HomePageState extends State<HomePage> {
                                             width: 150,
                                             child: Text(
                                               item['item'],
-                                              style:
-                                                  const TextStyle(fontSize: 16),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                              ),
                                             ),
                                           ),
                                           // control number of items
@@ -442,8 +449,9 @@ class _HomePageState extends State<HomePage> {
                                                   setStateFunction(() {
                                                     item['no']--;
                                                     if (item['no'] == 0) {
-                                                      _currentOrder
-                                                          .removeAt(index);
+                                                      _currentOrder.removeAt(
+                                                        index,
+                                                      );
                                                     }
                                                   });
                                                 },
@@ -453,7 +461,8 @@ class _HomePageState extends State<HomePage> {
                                               Text(
                                                 item['no'].toString(),
                                                 style: const TextStyle(
-                                                    fontSize: 18),
+                                                  fontSize: 18,
+                                                ),
                                               ),
                                               IconButton(
                                                 onPressed: () {
@@ -480,33 +489,36 @@ class _HomePageState extends State<HomePage> {
                           padding: const EdgeInsets.only(bottom: 20, top: 20),
                           child: TextButton(
                             style: TextButton.styleFrom(
-                                // beware of index value. if category_id changes (if row gets deleted)
-                                backgroundColor: _orange,
-                                minimumSize: const Size(270, 50),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10))),
+                              // beware of index value. if category_id changes (if row gets deleted)
+                              backgroundColor: _orange,
+                              minimumSize: const Size(270, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                             onPressed: () async {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => OrderPage(
-                                    getBill: _currentBill,
-                                    getOrder: _currentOrder,
-                                    onSaveBill: (updatedBill) {
-                                      setState(() {
-                                        _currentBill = updatedBill;
-                                        if (_currentBill.isEmpty) {
-                                          updateCurrentBill();
-                                        }
-                                      });
-                                    },
-                                    onSaveOrder: (updatedOrder) {
-                                      setState(() {
-                                        _currentOrder = updatedOrder;
-                                      });
-                                    },
-                                    isEdit: false,
-                                  ),
+                                  builder:
+                                      (context) => OrderPage(
+                                        getBill: _currentBill,
+                                        getOrder: _currentOrder,
+                                        onSaveBill: (updatedBill) {
+                                          setState(() {
+                                            _currentBill = updatedBill;
+                                            if (_currentBill.isEmpty) {
+                                              updateCurrentBill();
+                                            }
+                                          });
+                                        },
+                                        onSaveOrder: (updatedOrder) {
+                                          setState(() {
+                                            _currentOrder = updatedOrder;
+                                          });
+                                        },
+                                        isEdit: false,
+                                      ),
                                 ),
                               );
                             },
@@ -599,19 +611,25 @@ class _HomePageState extends State<HomePage> {
                         child: SizedBox(
                           width: 70,
                           child: Builder(
-                            builder: (context) => MaterialButton(
-                              onPressed: () {
-                                Scaffold.of(context).openEndDrawer();
-                              },
-                              elevation: 0,
-                              hoverElevation: 0,
-                              hoverColor: const Color.fromRGBO(214, 214, 214, 1),
-                              child: const Icon(
-                                Icons.settings,
-                                color: Colors.black,
-                                size: 32,
-                              ),
-                            ),
+                            builder:
+                                (context) => MaterialButton(
+                                  onPressed: () {
+                                    Scaffold.of(context).openEndDrawer();
+                                  },
+                                  elevation: 0,
+                                  hoverElevation: 0,
+                                  hoverColor: const Color.fromRGBO(
+                                    214,
+                                    214,
+                                    214,
+                                    1,
+                                  ),
+                                  child: const Icon(
+                                    Icons.settings,
+                                    color: Colors.black,
+                                    size: 32,
+                                  ),
+                                ),
                           ),
                         ),
                       ),
@@ -620,7 +638,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
       endDrawer: const Drawer(child: SettingsDrawer()),
