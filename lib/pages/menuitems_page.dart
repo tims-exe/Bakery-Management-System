@@ -22,7 +22,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
   Map<String, dynamic> selectedCategory = {};
   Map<String, dynamic> selectedBaseUnit = {};
   Map<String, dynamic> selectedSellUnit = {};
-  String? selectedDuration;
+  String selectedDuration = "Duration";
 
   final Color _orange = const Color.fromRGBO(230, 84, 0, 1);
   final Color _lightOrange = const Color.fromRGBO(255, 168, 120, 1);
@@ -43,15 +43,22 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
   bool? refrigerate = false;
   bool _isEditing = false;
   int? _editingItemId;
+  int retailPercentValue = 0;
+  int workPercentValue = 0;
+  int profitPercentValue = 0;
 
   void loadData() async {
     _categories = await _dbhelper.getCategory('item_category');
     _units = await _dbhelper.getUnits('unit_master');
     _settings = await _dbhelper.getSettings('settings');
 
-    retailPercent.text = _settings[0]['retail_price_percentage'].toString();
-    workPercent.text = _settings[0]['work_cost_percentage'].toString();
-    profitPercent.text = _settings[0]['profit_percentage'].toString();
+    retailPercentValue = _settings[0]['retail_price_percentage'];
+    workPercentValue = _settings[0]['work_cost_percentage'];
+    profitPercentValue = _settings[0]['profit_percentage'];
+
+    retailPercent.text = retailPercentValue.toString();
+    workPercent.text = workPercentValue.toString();
+    profitPercent.text = profitPercentValue.toString();
 
     print(_settings);
     print(profitPercent.text);
@@ -81,7 +88,9 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
         profitPercent.text.isNotEmpty &&
         selectedCategory.isNotEmpty &&
         selectedBaseUnit.isNotEmpty &&
-        selectedSellUnit.isNotEmpty) {
+        selectedSellUnit.isNotEmpty &&
+        bestBefore.text.isNotEmpty &&
+        selectedDuration.isNotEmpty) {
       Map<String, dynamic> itemData = {
         'item_name': name.text,
         'category_id': selectedCategory['category_id'],
@@ -132,17 +141,29 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
         wPrice.clear();
         rPrice.clear();
         mPrice.clear();
-        retailPercent.clear();
-        workPercent.clear();
-        profitPercent.clear();
         bestBefore.clear();
         comments.clear();
         refrigerate = false;
         selectedCategory.clear();
         selectedBaseUnit.clear();
         selectedSellUnit.clear();
-        selectedDuration = '';
+        selectedDuration = 'Duration';
+
+        retailPercent.text = retailPercentValue.toString();
+        workPercent.text = workPercentValue.toString();
+        profitPercent.text = profitPercentValue.toString();
+
+        _isEditing = false;
       });
+    } else {
+      Fluttertoast.showToast(
+        msg: "Please Fill all the necessary Columns",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.yellow,
+        textColor: Colors.black,
+        fontSize: 16.0,
+      );
     }
   }
 
@@ -164,7 +185,9 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
 
       // Parse best_before (e.g., "5 days" -> "5" and "days")
       String bestBeforeStr = item['best_before'] ?? '';
+
       if (bestBeforeStr.isNotEmpty) {
+        print("yes");
         List<String> parts = bestBeforeStr.split(' ');
         if (parts.length >= 2) {
           bestBefore.text = parts[0];
@@ -207,21 +230,21 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
       selectedCategory.clear();
       selectedBaseUnit.clear();
       selectedSellUnit.clear();
-      selectedDuration = null;
+      selectedDuration = "Duration";
 
       // Reset percentage fields to default values from settings
       retailPercent.text =
           _settings.isNotEmpty
               ? _settings[0]['retail_price_percentage'].toString()
-              : '';
+              : retailPercentValue.toString();
       workPercent.text =
           _settings.isNotEmpty
               ? _settings[0]['work_cost_percentage'].toString()
-              : '';
+              : workPercentValue.toString();
       profitPercent.text =
           _settings.isNotEmpty
               ? _settings[0]['profit_percentage'].toString()
-              : '';
+              : profitPercentValue.toString();
     });
   }
 
@@ -248,19 +271,34 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                 color: Colors.red,
                 iconSize: 30,
                 onPressed: () async {
-                  await _dbhelper.deleteItem('item_master', itemId);
-                  setState(() {
-                    Navigator.of(context).pop();
-                    Fluttertoast.showToast(
-                      msg: "$name Deleted",
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.BOTTOM,
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
-                      fontSize: 16.0,
-                    );
-                    clearFields();
-                  });
+                  bool res = await _dbhelper.getOrderItemById(itemId);
+                  if (res == false) {
+                    await _dbhelper.deleteItem('item_master', itemId);
+                    setState(() {
+                      Navigator.of(context).pop();
+                      Fluttertoast.showToast(
+                        msg: "$name Deleted",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                      clearFields();
+                    });
+                  } else {
+                    setState(() {
+                      Navigator.of(context).pop();
+                      Fluttertoast.showToast(
+                        msg: "$name was Ordered. Cannot be Deleted",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.yellow,
+                        textColor: Colors.black,
+                        fontSize: 16.0,
+                      );
+                    });
+                  }
                 },
               ),
             ],
@@ -985,8 +1023,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                                 ),
                                               ),
                                               child: Text(
-                                                selectedDuration ??
-                                                    'Duration', // Display selected duration or default text
+                                                selectedDuration, //??
+                                                //'Duration', // Display selected duration or default text
                                                 style: const TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.normal,
@@ -1114,7 +1152,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                       const SizedBox(width: 10),
                                     ],
                                     TextButton(
-                                      onPressed: () {
+                                      onPressed: () async {
                                         clearFields();
                                       },
                                       style: TextButton.styleFrom(

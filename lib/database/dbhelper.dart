@@ -394,6 +394,20 @@ class DbHelper {
     );
   }
 
+  Future<bool> getOrderItemById(int Id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> res = await db.query(
+      "order_details",
+      where: "item_id = ?",
+      whereArgs: [Id],
+    );
+
+    if (res.isEmpty) {
+      return false;
+    }
+    return true;
+  }
+
   // fetch order header of unproduced bills
   Future<List<Map<String, dynamic>>> getNotProducedOrderHeader(
     String tableName,
