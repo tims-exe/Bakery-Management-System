@@ -210,6 +210,7 @@ class DbHelper {
     );
   }
 
+
   // fetch units
   Future<List<Map<String, dynamic>>> getUnits(String tablename) async {
     final db = await database;
@@ -408,6 +409,56 @@ class DbHelper {
     return true;
   }
 
+
+  // production page
+  Future<List<Map<String, dynamic>>> getProductionData(String? date) async {
+    final db = await database;
+
+    // If date == null, fetch ALL records
+    String dateFilter = "";
+    List<dynamic> args = [];
+
+    if (date != null) {
+      dateFilter = "AND h.delivery_date = ?";
+      args.add(date);
+    }
+
+    String query = '''
+      SELECT 
+          h.delivery_date,
+          h.delivery_time,
+          i.item_name,
+          d.sell_quantity,
+          u.unit_name,
+          u.print_formula,
+          SUM(d.number_of_items) AS total_items
+      FROM 
+          order_details d,
+          order_header h,
+          item_master i,
+          unit_master u
+      WHERE 
+          d.bill_number = h.bill_number
+          AND d.item_id = i.item_id
+          AND d.sell_unit_id = u.unit_id
+          AND d.produced = 0
+          $dateFilter
+      GROUP BY 
+          h.delivery_date,
+          h.delivery_time,
+          i.item_name,
+          d.sell_quantity,
+          u.unit_name,
+          u.print_formula
+      ORDER BY 
+          h.delivery_date ASC,
+          h.delivery_time ASC;
+    ''';
+
+    return await db.rawQuery(query, args);
+  }
+
+
   // fetch order header of unproduced bills
   Future<List<Map<String, dynamic>>> getNotProducedOrderHeader(
     String tableName,
@@ -484,3 +535,5 @@ class DbHelper {
     return _database!;
   }
 }
+
+
