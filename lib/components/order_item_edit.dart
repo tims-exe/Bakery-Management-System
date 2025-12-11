@@ -6,7 +6,11 @@ class UnitConversion extends StatefulWidget {
   final Map<String, dynamic> getItem;
   final Function(Map<String, dynamic>) onSave;
 
-  const UnitConversion({super.key, required this.getItem, required this.onSave});
+  const UnitConversion({
+    super.key,
+    required this.getItem,
+    required this.onSave,
+  });
 
   @override
   State<UnitConversion> createState() => _UnitConversionState();
@@ -47,19 +51,32 @@ class _UnitConversionState extends State<UnitConversion> {
       setState(() {
         conversionQntyFieldController.text =
             currentItem['conversion'].toString();
-        currentItem['sell_rate'] = num.parse(
-            ((currentItem['price'] / currentItem['weight']) *
-                    currentItem['conversion'])
-                .toStringAsFixed(2));
+
+        num calculatedRate =
+            (currentItem['price'] / currentItem['weight']) *
+            currentItem['conversion'];
+
+        // format number: remove decimal if whole number
+        currentItem['sell_rate'] = num.parse(formatNumber(calculatedRate));
+        sellRateFieldController.text = formatNumber(calculatedRate);
+
         if (currentItem['unit'] == currentSellUnit) {
           currentItem['sell_qnty'] = currentItem['conversion'];
           sellQntyFieldController.text = currentItem['sell_qnty'].toString();
         }
-        sellRateFieldController.text = currentItem['sell_rate'].toString();
+
         currentSellUnit = currentItem['sell_unit'];
         currentSellUnitID = currentItem['sell_unit_id'];
       });
     }
+  }
+
+  // helper function
+  String formatNumber(num value) {
+    if (value % 1 == 0) {
+      return value.toInt().toString(); // return whole number
+    }
+    return value.toString(); // keep decimal
   }
 
   @override
@@ -82,10 +99,7 @@ class _UnitConversionState extends State<UnitConversion> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Colors.white,
-      title: const Text(
-        'Unit Conversion',
-        textAlign: TextAlign.center,
-      ),
+      title: const Text('Unit Conversion', textAlign: TextAlign.center),
       content: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.only(left: 15, right: 15),
@@ -94,18 +108,13 @@ class _UnitConversionState extends State<UnitConversion> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(
-                height: 10,
-              ),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     'Item',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
                   ),
                   // item name
                   Text(
@@ -117,16 +126,11 @@ class _UnitConversionState extends State<UnitConversion> {
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 25,
-              ),
+              const SizedBox(height: 25),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Base Qnty',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  const Text('Base Qnty', style: TextStyle(fontSize: 18)),
                   // base quantity
                   Text(
                     '${currentItem['weight']} ${currentItem['unit']}',
@@ -137,10 +141,7 @@ class _UnitConversionState extends State<UnitConversion> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Base Rate',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  const Text('Base Rate', style: TextStyle(fontSize: 18)),
                   // base rate
                   Text(
                     '${currentItem['price']}',
@@ -148,9 +149,7 @@ class _UnitConversionState extends State<UnitConversion> {
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 20,
-              ),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -164,11 +163,13 @@ class _UnitConversionState extends State<UnitConversion> {
                     height: 30,
                     child: TextField(
                       controller: conversionQntyFieldController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       inputFormatters: <TextInputFormatter>[
                         FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d{0,2}')),
+                          RegExp(r'^\d*\.?\d{0,2}'),
+                        ),
                       ],
                       textAlign: TextAlign.right,
                       decoration: const InputDecoration(
@@ -182,9 +183,7 @@ class _UnitConversionState extends State<UnitConversion> {
                         }
                         updateConversionRates();
                       },
-                      style: const TextStyle(
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(fontSize: 18),
                       onTap: () {
                         conversionQntyFieldController.selection = TextSelection(
                           baseOffset: 0,
@@ -196,27 +195,24 @@ class _UnitConversionState extends State<UnitConversion> {
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 20,
-              ),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Sell Qnty',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  const Text('Sell Qnty', style: TextStyle(fontSize: 18)),
                   // sell quantity
                   SizedBox(
                     width: 80,
                     height: 30,
                     child: TextField(
                       controller: sellQntyFieldController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       inputFormatters: <TextInputFormatter>[
                         FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d{0,2}')),
+                          RegExp(r'^\d*\.?\d{0,2}'),
+                        ),
                       ],
                       textAlign: TextAlign.right,
                       decoration: const InputDecoration(
@@ -233,9 +229,7 @@ class _UnitConversionState extends State<UnitConversion> {
                           });
                         }
                       },
-                      style: const TextStyle(
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(fontSize: 18),
                       onTap: () {
                         sellQntyFieldController.selection = TextSelection(
                           baseOffset: 0,
@@ -249,10 +243,7 @@ class _UnitConversionState extends State<UnitConversion> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Sell Unit',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  const Text('Sell Unit', style: TextStyle(fontSize: 18)),
                   // sell unit
                   Container(
                     alignment: Alignment.centerRight,
@@ -260,29 +251,26 @@ class _UnitConversionState extends State<UnitConversion> {
                       dropdownColor: Colors.white,
                       value: currentSellUnit,
                       icon: const SizedBox.shrink(),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(color: Colors.black, fontSize: 18),
                       onChanged: (String? newValue) {
                         if (mounted) {
                           setState(() {
                             currentSellUnit = newValue!;
-                            currentSellUnitID =
-                                getUnitId(unitList.indexOf(currentSellUnit));
+                            currentSellUnitID = getUnitId(
+                              unitList.indexOf(currentSellUnit),
+                            );
                           });
                         }
                       },
-                      items: unitList
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(
-                            value,
-                            textAlign: TextAlign.right,
-                          ),
-                        );
-                      }).toList(),
+                      items:
+                          unitList.map<DropdownMenuItem<String>>((
+                            String value,
+                          ) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value, textAlign: TextAlign.right),
+                            );
+                          }).toList(),
                       underline: const SizedBox.shrink(),
                     ),
                   ),
@@ -291,21 +279,20 @@ class _UnitConversionState extends State<UnitConversion> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Sell Rate',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  const Text('Sell Rate', style: TextStyle(fontSize: 18)),
                   // sell rate
                   SizedBox(
                     width: 80,
                     height: 30,
                     child: TextField(
                       controller: sellRateFieldController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       inputFormatters: <TextInputFormatter>[
                         FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d{0,2}')),
+                          RegExp(r'^\d*\.?\d{0,2}'),
+                        ),
                       ],
                       textAlign: TextAlign.right,
                       decoration: const InputDecoration(
@@ -322,9 +309,7 @@ class _UnitConversionState extends State<UnitConversion> {
                           });
                         }
                       },
-                      style: const TextStyle(
-                        fontSize: 18,
-                      ),
+                      style: const TextStyle(fontSize: 18),
                       onTap: () {
                         sellRateFieldController.selection = TextSelection(
                           baseOffset: 0,
@@ -364,8 +349,9 @@ class _UnitConversionState extends State<UnitConversion> {
             elevation: 0,
           ),
           onPressed: () {
-            currentItem['conversion'] =
-                num.parse(conversionQntyFieldController.text);
+            currentItem['conversion'] = num.parse(
+              conversionQntyFieldController.text,
+            );
             currentItem['sell_qnty'] = num.parse(sellQntyFieldController.text);
             currentItem['sell_rate'] = num.parse(sellRateFieldController.text);
             currentItem['sell_unit'] = currentSellUnit;
