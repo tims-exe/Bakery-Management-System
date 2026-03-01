@@ -64,6 +64,27 @@ class DbHelper {
     return await db.query(tableName, orderBy: 'item_name ASC');
   }
 
+
+  // Refresh menu sort order based on order frequency
+  Future<void> refreshMenuSortOrder() async {
+    final db = await database;
+
+    // Get order counts per item
+    final List<Map<String, dynamic>> results = await db.rawQuery('''
+      SELECT item_id, SUM(number_of_items) as sortord
+      FROM order_details
+      GROUP BY item_id
+    ''');
+
+    // Update item_master.sortord
+    for (var row in results) {
+      await db.rawUpdate(
+        'UPDATE item_master SET sortord = ?, modified_datetime = datetime("now") WHERE item_id = ?',
+        [row['sortord'], row['item_id']],
+      );
+    }
+  }
+
   // Fetch Items
   Future<List<Map<String, dynamic>>> getItems(
     String tableName,
@@ -75,7 +96,7 @@ class DbHelper {
       tableName,
       where: condition,
       whereArgs: conditionArgs,
-      //orderBy: 'item_name DESC'
+      orderBy: 'sortord DESC, item_name ASC',
     );
   }
 

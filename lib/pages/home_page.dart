@@ -641,7 +641,13 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      endDrawer: const Drawer(child: SettingsDrawer()),
+      endDrawer: Drawer(
+        child: SettingsDrawer(
+          onRefresh: () {
+            setState(() {});
+          },
+        ),
+      ),
     );
   }
 }

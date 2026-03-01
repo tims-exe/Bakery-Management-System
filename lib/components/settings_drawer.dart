@@ -3,7 +3,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nissy_bakes_original/database/dbhelper.dart';
 
 class SettingsDrawer extends StatefulWidget {
-  const SettingsDrawer({super.key});
+  final VoidCallback? onRefresh;
+  const SettingsDrawer({super.key, this.onRefresh});
 
   @override
   State<SettingsDrawer> createState() => _SettingsDrawerState();
@@ -115,6 +116,45 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                 ),
                 onTap: () {
                   Navigator.pushNamed(context, '/menuitemspage');
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                title: const Row(
+                  children: [
+                    Icon(
+                      Icons.refresh,
+                      size: 30,
+                    ),
+                    SizedBox(width: 15),
+                    Text(
+                      'Refresh Menu',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+                onTap: () async {
+                  await _dbHelper.refreshMenuSortOrder();
+                  
+                  widget.onRefresh?.call();
+
+                  Fluttertoast.showToast(
+                    msg: 'Menu refreshed!',
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.green,
+                    textColor: Colors.white,
+                    fontSize: 16,
+                  );
+
+                  Navigator.of(context).pop();
+
+                  setState(() {});
                 },
               ),
             ),
