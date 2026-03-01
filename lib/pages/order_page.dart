@@ -134,7 +134,8 @@ class _OrderPageState extends State<OrderPage> {
       if (gotBillNumber != null) {
         billNumber = gotBillNumber + 1;
       }
-      if (currentBill['bill_number'] == 1 || currentBill['bill_number'] > billNumber) {
+      if (currentBill['bill_number'] == 1 ||
+          currentBill['bill_number'] > billNumber) {
         currentBill['bill_number'] = billNumber;
       }
     } else {
@@ -885,7 +886,7 @@ class _OrderPageState extends State<OrderPage> {
                                   var item = currentOrder[index];
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 15,
+                                      vertical: 8,
                                     ),
                                     child: Row(
                                       mainAxisAlignment:
