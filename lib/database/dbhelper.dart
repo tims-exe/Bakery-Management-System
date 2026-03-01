@@ -69,20 +69,16 @@ class DbHelper {
   Future<void> refreshMenuSortOrder() async {
     final db = await database;
 
-    // Get order counts per item
-    final List<Map<String, dynamic>> results = await db.rawQuery('''
-      SELECT item_id, SUM(number_of_items) as sortord
-      FROM order_details
-      GROUP BY item_id
+    await db.rawUpdate('''
+      UPDATE item_master
+      SET 
+        sortord = COALESCE((
+          SELECT SUM(number_of_items)
+          FROM order_details
+          WHERE order_details.item_id = item_master.item_id
+        ), 0),
+        modified_datetime = datetime('now')
     ''');
-
-    // Update item_master.sortord
-    for (var row in results) {
-      await db.rawUpdate(
-        'UPDATE item_master SET sortord = ?, modified_datetime = datetime("now") WHERE item_id = ?',
-        [row['sortord'], row['item_id']],
-      );
-    }
   }
 
   // Fetch Items
