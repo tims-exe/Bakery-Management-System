@@ -17,7 +17,7 @@ class _HomePageState extends State<HomePage> {
 
   // variables
   var _category = 1;
-
+  int _billNumberFinancialYear = 0;
   final _defaultNo = 1;
 
   List<Map<String, dynamic>> _currentOrder = [];
@@ -29,6 +29,16 @@ class _HomePageState extends State<HomePage> {
   final Color _orange = const Color.fromRGBO(255, 168, 120, 1);
 
   List<Map<String, dynamic>> _units = [];
+
+  Future<void> _loadSettings() async {
+  final settings = await _dbhelper.getAppSettings();
+  if (settings.isNotEmpty) {
+    setState(() {
+      _billNumberFinancialYear = settings['bill_number_financial_year'];
+      _currentBill['bill_number_financial_year'] = _billNumberFinancialYear;
+    });
+  }
+}
 
   // fetch all units to store in a list
   void _loadUnits() async {
@@ -100,7 +110,7 @@ class _HomePageState extends State<HomePage> {
   // function to update current bill
   void updateCurrentBill() {
     _currentBill['bill_number_type'] = 'B';
-    _currentBill['bill_number_financial_year'] = 2425;
+    _currentBill['bill_number_financial_year'] = _billNumberFinancialYear;
     _currentBill['bill_number'] = 1;
     _currentBill['bill_date'] = '';
     _currentBill['customer_id'] = 1;
@@ -127,16 +137,16 @@ class _HomePageState extends State<HomePage> {
 
   // initial run function
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
+  _loadUnits();
+  updateCurrentBill();
+  _loadSettings(); // add this
 
-    _loadUnits();
-    updateCurrentBill();
-
-    Future.delayed(const Duration(seconds: 1), () {
-      getCategoryHomeScreen();
-    });
-  }
+  Future.delayed(const Duration(seconds: 1), () {
+    getCategoryHomeScreen();
+  });
+}
 
   // main component
   @override

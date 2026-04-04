@@ -53,6 +53,15 @@ class DbHelper {
     return await openDatabase(path);
   }
 
+  Future<Map<String, dynamic>> getAppSettings() async {
+    final db = await database;
+    final result = await db.query('settings', limit: 1);
+    if (result.isNotEmpty) {
+      return result.first;
+    }
+    return {};
+  }
+
   // Fetch Categories
   Future<List<Map<String, dynamic>>> getCategory(String tableName) async {
     final db = await database;
@@ -484,18 +493,41 @@ class DbHelper {
     return await db.query(tableName, where: 'produced = 0');
   }
 
+  // Future<void> copyDatabaseToDesktop() async {
+  //   // /data/user/0/com.example.nissy_bakes_app/databases
+  //   // /storage/emulated/0/Android/data/com.example.nissy_bakes_app/files
+
+  //   var status = await Permission.manageExternalStorage.status;
+
+  //   if (!status.isGranted) {
+  //     await Permission.manageExternalStorage.request();
+  //   }
+
+  //   var status1 = await Permission.storage.status;
+
+  //   if (!status1.isGranted) {
+  //     await Permission.storage.request();
+  //   }
+
+  //   try {
+  //     File dbPath = File(
+  //       '/data/user/0/com.example.nissy_bakes_original/databases/nissybakesdb.db',
+  //     );
+  //     //Directory? folderPath = Directory('/storage/emulated/0/NissyBakesBackup');
+  //     await dbPath.copy('/storage/emulated/0/NissyBakesBackup/nissybakesdb.db');
+
+  //     print('DATABASE COPIED');
+  //   } catch (e) {
+  //     print('=======================*Error : ${e.toString()}');
+  //   }
+  // }
   Future<void> copyDatabaseToDesktop() async {
-    // /data/user/0/com.example.nissy_bakes_app/databases
-    // /storage/emulated/0/Android/data/com.example.nissy_bakes_app/files
-
     var status = await Permission.manageExternalStorage.status;
-
     if (!status.isGranted) {
       await Permission.manageExternalStorage.request();
     }
 
     var status1 = await Permission.storage.status;
-
     if (!status1.isGranted) {
       await Permission.storage.request();
     }
@@ -504,8 +536,19 @@ class DbHelper {
       File dbPath = File(
         '/data/user/0/com.example.nissy_bakes_original/databases/nissybakesdb.db',
       );
-      //Directory? folderPath = Directory('/storage/emulated/0/NissyBakesBackup');
-      await dbPath.copy('/storage/emulated/0/NissyBakesBackup/nissybakesdb.db');
+
+      Directory backupDir = Directory(
+        '/storage/emulated/0/NissyBakesBackup',
+      );
+
+      if (!await backupDir.exists()) {
+        await backupDir.create(recursive: true);
+        print('Backup folder created');
+      }
+
+      await dbPath.copy(
+        '${backupDir.path}/nissybakesdb.db',
+      );
 
       print('DATABASE COPIED');
     } catch (e) {

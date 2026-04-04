@@ -51,9 +51,7 @@ class _OrderPageState extends State<OrderPage> {
   final upiNo = dotenv.env['UPI_NO'];
   final link = dotenv.env['LINK'];
   final email = dotenv.env['EMAIL'];
-  final int billNumberFinancialYear = int.parse(
-    dotenv.env['BILL_NUMBER_FINANCIAL_YEAR']!,
-  );
+  int billNumberFinancialYear = 0;
 
   // variables
   int billNumber = 1;
@@ -97,15 +95,21 @@ class _OrderPageState extends State<OrderPage> {
   List<Map<String, dynamic>> _units = [];
   List<Map<String, dynamic>> _allItems = [];
 
-  void _loadData() async {
-    List<Map<String, dynamic>> units = await _dbhelper.getUnits('unit_master');
-    List<Map<String, dynamic>> items = await _dbhelper.getUnits(
-      'item_master',
-    ); // reuse same method for similar db request
-    _units = units;
-    _allItems = items;
-    getCustomerList();
+void _loadData() async {
+  List<Map<String, dynamic>> units = await _dbhelper.getUnits('unit_master');
+  List<Map<String, dynamic>> items = await _dbhelper.getUnits('item_master');
+  _units = units;
+  _allItems = items;
+
+  final settings = await _dbhelper.getAppSettings();
+  if (settings.isNotEmpty) {
+    setState(() {
+      billNumberFinancialYear = settings['bill_number_financial_year'];
+    });
   }
+
+  getCustomerList();
+}
 
   // function to get current date from datetime
   String getDate(DateTime datetime, String param) {
