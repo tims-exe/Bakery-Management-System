@@ -51,3 +51,5 @@ todos.txt
 .env
 
 .vscode
+# personal notes / open questions (not for git)
+doubts.md

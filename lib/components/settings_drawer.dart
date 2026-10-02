@@ -125,6 +125,32 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                 title: const Row(
                   children: [
                     Icon(
+                      Icons.inventory_2,
+                      size: 30,
+                    ),
+                    SizedBox(
+                      width: 15,
+                    ),
+                    Text(
+                      'Raw Materials',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.pushNamed(context, '/rawmaterials');
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                title: const Row(
+                  children: [
+                    Icon(
                       Icons.refresh,
                       size: 30,
                     ),

@@ -24,8 +24,8 @@ class DbHelper {
     final path = join(dbPath, 'nissybakesdb.db');
 
     // for deleting existing database......use carefully
-    await deleteDatabase(path);
-    debugPrint('Databse Deleted');
+    // await deleteDatabase(path);
+    // debugPrint('Databse Deleted');
 
     final exist = await databaseExists(path);
 
@@ -587,6 +587,47 @@ class DbHelper {
     await db.delete(tableName, where: whereClause, whereArgs: whereArgs);
 
     print('Customer from $tableName DELETED');
+  }
+
+  // fetch raw materials with their base unit name
+  Future<List<Map<String, dynamic>>> getRawMaterials() async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT rm.*, u.unit_name AS base_unit_name
+      FROM raw_material_master rm
+      LEFT JOIN unit_master u ON u.unit_id = rm.base_unit_id
+      ORDER BY rm.rm_name COLLATE NOCASE ASC
+    ''');
+  }
+
+  // insert raw material
+  Future<int> insertRawMaterial(Map<String, dynamic> rawMaterial) async {
+    final db = await database;
+    return await db.insert('raw_material_master', rawMaterial);
+  }
+
+  // update raw material
+  Future<int> updateRawMaterial(
+    Map<String, dynamic> rawMaterial,
+    int rmID,
+  ) async {
+    final db = await database;
+    return await db.update(
+      'raw_material_master',
+      rawMaterial,
+      where: 'rm_id = ?',
+      whereArgs: [rmID],
+    );
+  }
+
+  // delete raw material
+  Future<int> deleteRawMaterial(int rmID) async {
+    final db = await database;
+    return await db.delete(
+      'raw_material_master',
+      where: 'rm_id = ?',
+      whereArgs: [rmID],
+    );
   }
 
   Future<Database> get database async {
