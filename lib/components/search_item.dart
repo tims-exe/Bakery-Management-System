@@ -101,7 +101,7 @@ class _SearchItemState extends State<SearchItem> {
           'sell_qnty': item['sell_quantity'],
           'sell_unit_id': item['sell_unit_id'],
           'conversion': item['base_quantity'],
-          'sell_rate': item['menu_price'],
+          'sell_rate': num.parse(item['menu_price'].toString()).round(),
         });
       });
     } else {

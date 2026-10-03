@@ -955,17 +955,12 @@ void _loadData() async {
                                                       controller:
                                                           itemPriceFieldController,
                                                       keyboardType:
-                                                          const TextInputType.numberWithOptions(
-                                                            decimal: true,
-                                                          ),
+                                                          TextInputType.number,
                                                       inputFormatters: <
                                                         TextInputFormatter
                                                       >[
-                                                        FilteringTextInputFormatter.allow(
-                                                          RegExp(
-                                                            r'^\d*\.?\d{0,2}',
-                                                          ),
-                                                        ),
+                                                        FilteringTextInputFormatter
+                                                            .digitsOnly,
                                                       ],
                                                       decoration: InputDecoration(
                                                         border: OutlineInputBorder(

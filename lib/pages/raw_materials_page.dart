@@ -658,7 +658,7 @@ class _RawMaterialsPageState extends State<RawMaterialsPage> {
                                 Expanded(
                                   child: Text(
                                     _isEdit
-                                        ? "${name.text}'s Details"
+                                        ? "${name.text} Details"
                                         : 'Raw Material Details',
                                     style: const TextStyle(
                                       fontSize: 25,

@@ -56,9 +56,10 @@ class _UnitConversionState extends State<UnitConversion> {
             (currentItem['price'] / currentItem['weight']) *
             currentItem['conversion'];
 
-        // format number: remove decimal if whole number
-        currentItem['sell_rate'] = num.parse(formatNumber(calculatedRate));
-        sellRateFieldController.text = formatNumber(calculatedRate);
+        // sell rate is a whole number, rounded normally
+        final num roundedRate = calculatedRate.round();
+        currentItem['sell_rate'] = roundedRate;
+        sellRateFieldController.text = roundedRate.toString();
 
         if (currentItem['unit'] == currentSellUnit) {
           currentItem['sell_qnty'] = currentItem['conversion'];
@@ -85,6 +86,7 @@ class _UnitConversionState extends State<UnitConversion> {
     currentItem = widget.getItem;
     conversionQntyFieldController.text = currentItem['conversion'].toString();
     sellQntyFieldController.text = currentItem['sell_qnty'].toString();
+    currentItem['sell_rate'] = (currentItem['sell_rate'] as num).round();
     sellRateFieldController.text = currentItem['sell_rate'].toString();
     currentSellUnit = currentItem['sell_unit'];
     currentSellUnitID = currentItem['sell_unit_id'];
@@ -286,13 +288,9 @@ class _UnitConversionState extends State<UnitConversion> {
                     height: 30,
                     child: TextField(
                       controller: sellRateFieldController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      keyboardType: TextInputType.number,
                       inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,2}'),
-                        ),
+                        FilteringTextInputFormatter.digitsOnly,
                       ],
                       textAlign: TextAlign.right,
                       decoration: const InputDecoration(
@@ -353,7 +351,9 @@ class _UnitConversionState extends State<UnitConversion> {
               conversionQntyFieldController.text,
             );
             currentItem['sell_qnty'] = num.parse(sellQntyFieldController.text);
-            currentItem['sell_rate'] = num.parse(sellRateFieldController.text);
+            currentItem['sell_rate'] =
+                num.tryParse(sellRateFieldController.text) ??
+                currentItem['sell_rate'];
             currentItem['sell_unit'] = currentSellUnit;
             currentItem['sell_unit_id'] = currentSellUnitID;
             widget.onSave(currentItem); // Save changes
