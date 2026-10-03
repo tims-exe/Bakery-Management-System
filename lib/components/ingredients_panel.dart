@@ -8,6 +8,9 @@ const Color _lightOrange = Color.fromRGBO(255, 168, 120, 1);
 const Color _grey = Color.fromARGB(255, 212, 212, 212);
 const Color _totalBg = Color.fromRGBO(255, 236, 214, 1);
 
+// compiled once and shared by every quantity field instead of per rebuild
+final RegExp _qtyRegExp = RegExp(r'^\d*\.?\d*');
+
 String _fmt(num n) =>
     n == n.truncate() ? n.truncate().toString() : n.toString();
 
@@ -323,9 +326,7 @@ class IngredientsPanel extends StatelessWidget {
                           decimal: true,
                         ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d*'),
-                          ),
+                          FilteringTextInputFormatter.allow(_qtyRegExp),
                         ],
                         onChanged: (_) => controller.changed(),
                         decoration: _decoration(),
