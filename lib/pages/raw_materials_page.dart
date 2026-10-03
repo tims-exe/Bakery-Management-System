@@ -34,6 +34,9 @@ class _RawMaterialsPageState extends State<RawMaterialsPage> {
   // cost of the raw material being edited, moves to prev_cost on save
   num _currentCost = 0;
 
+  // unit when loaded, a used raw material cannot change its unit
+  int? _originalUnitId;
+
   Map<String, dynamic> selectedUnit = {};
   String selectedType = 'edible';
 
@@ -100,6 +103,7 @@ class _RawMaterialsPageState extends State<RawMaterialsPage> {
       selectedType = 'edible';
       currentRmID = 0;
       _currentCost = 0;
+      _originalUnitId = null;
       _isEdit = false;
     });
   }
@@ -119,6 +123,7 @@ class _RawMaterialsPageState extends State<RawMaterialsPage> {
       };
       selectedType = rm['rm_type'];
       _currentCost = rm['cost'];
+      _originalUnitId = rm['base_unit_id'];
     });
   }
 
@@ -157,6 +162,16 @@ class _RawMaterialsPageState extends State<RawMaterialsPage> {
       return;
     }
 
+    if (_isEdit &&
+        _originalUnitId != selectedUnit['unit_id'] &&
+        await _dbhelper.isRawMaterialInUse(currentRmID)) {
+      showInUseDialog(
+        'The unit cannot be changed because this raw material is used in '
+        'item ingredients.',
+      );
+      return;
+    }
+
     final now = nowString();
     final rm = <String, dynamic>{
       'rm_name': name.text.trim(),
@@ -173,6 +188,7 @@ class _RawMaterialsPageState extends State<RawMaterialsPage> {
         // old cost always moves to prev_cost on save
         rm['prev_cost'] = _currentCost;
         await _dbhelper.updateRawMaterial(rm, currentRmID);
+        await _dbhelper.recalculateItemsUsingRm(currentRmID);
         showToast('${rm['rm_name']} Updated', Colors.green);
       } else {
         rm['created_datetime'] = now;
@@ -192,8 +208,42 @@ class _RawMaterialsPageState extends State<RawMaterialsPage> {
     await loadRawMaterials();
   }
 
+  // warning pop up for raw materials that are used in items
+  void showInUseDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              SizedBox(width: 10),
+              Text('Not allowed'),
+            ],
+          ),
+          content: Text(message, style: const TextStyle(fontSize: 16)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // delete pop up
-  void deleteModal(int rmID, String rmName) {
+  Future<void> deleteModal(int rmID, String rmName) async {
+    if (await _dbhelper.isRawMaterialInUse(rmID)) {
+      if (!mounted) return;
+      showInUseDialog(
+        '$rmName cannot be deleted because it is used in item ingredients.',
+      );
+      return;
+    }
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) {

@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 //import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sqflite/sqflite.dart';
+import '../services/price_calculator.dart';
 
 // initDb -> to help copy the database from the assets folder to sqflite database
 // run this code once by calling the init function
@@ -298,11 +299,18 @@ class DbHelper {
 
   Future<int> deleteItem(String tableName, int itemId) async {
     final db = await database;
-    return await db.delete(
-      tableName,
-      where: 'item_id = ?',
-      whereArgs: [itemId],
-    );
+    return await db.transaction((txn) async {
+      await txn.delete(
+        'item_ingredient',
+        where: 'item_id = ?',
+        whereArgs: [itemId],
+      );
+      return await txn.delete(
+        tableName,
+        where: 'item_id = ?',
+        whereArgs: [itemId],
+      );
+    });
   }
 
   // insert customer
@@ -628,6 +636,156 @@ class DbHelper {
       where: 'rm_id = ?',
       whereArgs: [rmID],
     );
+  }
+
+  // ---------------- item ingredients ----------------
+
+  // ingredients of an item, with the raw material details needed for costing
+  Future<List<Map<String, dynamic>>> getItemIngredients(int itemId) async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT ii.rm_id, ii.quantity, ii.unit_id,
+             rm.rm_name, rm.weight, rm.cost, rm.rm_type,
+             u.unit_name
+      FROM item_ingredient ii
+      JOIN raw_material_master rm ON rm.rm_id = ii.rm_id
+      LEFT JOIN unit_master u ON u.unit_id = ii.unit_id
+      WHERE ii.item_id = ?
+      ORDER BY rm.rm_name COLLATE NOCASE ASC
+    ''', [itemId]);
+  }
+
+  // replaces an item's ingredients and recalculates its prices
+  // rows: rm_id, quantity, unit_id
+  Future<void> saveItemIngredients(
+    int itemId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final existing = await txn.query(
+        'item_ingredient',
+        columns: ['rm_id', 'created_datetime'],
+        where: 'item_id = ?',
+        whereArgs: [itemId],
+      );
+      final created = {
+        for (final r in existing) r['rm_id'] as int: r['created_datetime'],
+      };
+      await txn.delete(
+        'item_ingredient',
+        where: 'item_id = ?',
+        whereArgs: [itemId],
+      );
+      final now = _nowString();
+      for (final r in rows) {
+        await txn.insert('item_ingredient', {
+          'item_id': itemId,
+          'rm_id': r['rm_id'],
+          'quantity': r['quantity'],
+          'unit_id': r['unit_id'],
+          'created_datetime': created[r['rm_id']] ?? now,
+          'modified_datetime': now,
+        });
+      }
+      await _recalculateItem(txn, itemId);
+    });
+  }
+
+  // the one common way to refresh an item's stored prices
+  Future<void> recalculateItemPrices(int itemId) async {
+    final db = await database;
+    await _recalculateItem(db, itemId);
+  }
+
+  // refresh every item that uses a raw material (after its cost/weight change)
+  Future<void> recalculateItemsUsingRm(int rmId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final items = await txn.query(
+        'item_ingredient',
+        columns: ['item_id'],
+        where: 'rm_id = ?',
+        whereArgs: [rmId],
+      );
+      for (final r in items) {
+        await _recalculateItem(txn, r['item_id'] as int);
+      }
+    });
+  }
+
+  Future<bool> isRawMaterialInUse(int rmId) async {
+    final db = await database;
+    final r = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM item_ingredient WHERE rm_id = ?',
+      [rmId],
+    );
+    return (r.first['c'] as int) > 0;
+  }
+
+  // items without ingredients keep their hand-entered prices
+  Future<void> _recalculateItem(DatabaseExecutor db, int itemId) async {
+    final item = await db.query(
+      'item_master',
+      columns: [
+        'retail_price_percentage',
+        'work_cost_percentage',
+        'profit_percentage',
+      ],
+      where: 'item_id = ?',
+      whereArgs: [itemId],
+    );
+    if (item.isEmpty) return;
+
+    final rows = await db.rawQuery('''
+      SELECT ii.quantity, rm.weight, rm.cost, rm.rm_type
+      FROM item_ingredient ii
+      JOIN raw_material_master rm ON rm.rm_id = ii.rm_id
+      WHERE ii.item_id = ?
+    ''', [itemId]);
+    if (rows.isEmpty) return;
+
+    num edible = 0;
+    num packing = 0;
+    for (final r in rows) {
+      final cost = PriceCalculator.ingredientCost(
+        quantity: r['quantity'] as num,
+        rmWeight: r['weight'] as num,
+        rmCost: r['cost'] as num,
+      );
+      if (r['rm_type'] == 'packing') {
+        packing += cost;
+      } else {
+        edible += cost;
+      }
+    }
+
+    num pct(String key) => num.tryParse(item.first[key].toString()) ?? 0;
+    final prices = PriceCalculator.calculate(
+      edibleCost: edible,
+      packingCost: packing,
+      workPct: pct('work_cost_percentage'),
+      profitPct: pct('profit_percentage'),
+      retailPct: pct('retail_price_percentage'),
+    );
+
+    await db.update(
+      'item_master',
+      {
+        'price_wholesale': prices.wholesale,
+        'price_retail': prices.retail,
+        'modified_datetime': _nowString(),
+      },
+      where: 'item_id = ?',
+      whereArgs: [itemId],
+    );
+  }
+
+  String _nowString() {
+    final d = DateTime.now();
+    String t(int n) => n.toString().padLeft(2, '0');
+    return '${d.year.toString().padLeft(4, '0')}-${t(d.month)}-${t(d.day)} '
+        '${t(d.hour)}:${t(d.minute)}:${t(d.second)}';
   }
 
   Future<Database> get database async {

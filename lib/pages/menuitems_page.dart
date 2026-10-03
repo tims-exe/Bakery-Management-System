@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nissy_bakes_original/database/dbhelper.dart';
 import 'package:nissy_bakes_original/components/search_menu_item.dart'; // Add this import
+import 'package:nissy_bakes_original/components/ingredients_panel.dart';
+import 'package:nissy_bakes_original/components/admin_password_dialog.dart';
 
 class MenuitemsPage extends StatefulWidget {
   const MenuitemsPage({super.key});
@@ -47,10 +49,74 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
   int workPercentValue = 0;
   int profitPercentValue = 0;
 
+  // ingredients of the item on screen (read from / saved to the database)
+  final IngredientsController _ingredients = IngredientsController();
+  // calculated wholesale / retail shown (locked) while ingredients exist
+  final TextEditingController calcW = TextEditingController();
+  final TextEditingController calcR = TextEditingController();
+  bool _showPercents = false;
+  // admin password entered once while on this page
+  bool _percentUnlocked = false;
+
+  // a price input used in the price row
+  Widget _priceField({
+    required TextEditingController controller,
+    required String label,
+    bool locked = false,
+    ValueChanged<String>? onChanged,
+    ValueChanged<String>? onSubmitted,
+  }) {
+    return TextField(
+      controller: controller,
+      readOnly: locked,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
+      ],
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      decoration: InputDecoration(
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.black),
+        filled: locked,
+        fillColor: Colors.grey.shade200,
+        suffixIcon: locked
+            ? const Icon(Icons.lock_outline, size: 16, color: Colors.black54)
+            : null,
+        suffixIconConstraints: const BoxConstraints(minWidth: 28),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _orange),
+        ),
+      ),
+    );
+  }
+
+  // eye toggle: password is asked only the first time on this page
+  Future<void> _togglePercents() async {
+    if (_showPercents) {
+      setState(() => _showPercents = false);
+      return;
+    }
+    if (!_percentUnlocked) {
+      if (!await askAdminPassword(context)) return;
+      _percentUnlocked = true;
+    }
+    if (!mounted) return;
+    setState(() => _showPercents = true);
+  }
+
   void loadData() async {
     _categories = await _dbhelper.getCategory('item_category');
     _units = await _dbhelper.getUnits('unit_master');
     _settings = await _dbhelper.getSettings('settings');
+    await _ingredients.loadRawMaterials();
 
     retailPercentValue = _settings[0]['retail_price_percentage'];
     workPercentValue = _settings[0]['work_cost_percentage'];
@@ -77,11 +143,30 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
   }
 
   void handleSave() async {
+    final bool hasIng = _ingredients.hasIngredients;
+    if (hasIng && _ingredients.hasEmptyQuantity) {
+      Fluttertoast.showToast(
+        msg: "Enter quantity for all ingredients",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.yellow,
+        textColor: Colors.black,
+        fontSize: 16.0,
+      );
+      return;
+    }
+    num pct(TextEditingController c) => num.tryParse(c.text) ?? 0;
+    final prices = _ingredients.breakdown(
+      workPct: pct(workPercent),
+      profitPct: pct(profitPercent),
+      retailPct: pct(retailPercent),
+    );
+
     if (name.text.isNotEmpty &&
         baseQnty.text.isNotEmpty &&
         sellQnty.text.isNotEmpty &&
-        wPrice.text.isNotEmpty &&
-        rPrice.text.isNotEmpty &&
+        (hasIng || wPrice.text.isNotEmpty) &&
+        (hasIng || rPrice.text.isNotEmpty) &&
         mPrice.text.isNotEmpty &&
         retailPercent.text.isNotEmpty &&
         workPercent.text.isNotEmpty &&
@@ -98,8 +183,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
         'base_unit_id': selectedBaseUnit['unit_id'],
         'sell_quantity': sellQnty.text,
         'sell_unit_id': selectedSellUnit['unit_id'],
-        'price_wholesale': wPrice.text,
-        'price_retail': rPrice.text,
+        'price_wholesale': hasIng ? prices.wholesale : wPrice.text,
+        'price_retail': hasIng ? prices.retail : rPrice.text,
         'retail_price_percentage': retailPercent.text,
         'menu_price': mPrice.text,
         'work_cost_percentage': workPercent.text,
@@ -112,6 +197,10 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
 
       if (_isEditing && _editingItemId != null) {
         await _dbhelper.updateItem(itemData, _editingItemId!);
+        await _dbhelper.saveItemIngredients(
+          _editingItemId!,
+          _ingredients.toDbRows(),
+        );
         print('item updated');
         Fluttertoast.showToast(
           msg: "${name.text} Updated",
@@ -122,7 +211,11 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
           fontSize: 16.0,
         );
       } else {
-        await _dbhelper.insertItem(itemData);
+        final newItemId = await _dbhelper.insertItem(itemData);
+        await _dbhelper.saveItemIngredients(
+          newItemId,
+          _ingredients.toDbRows(),
+        );
         print('item inserted');
         Fluttertoast.showToast(
           msg: "${name.text} Added to Menu",
@@ -140,7 +233,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
         sellQnty.clear();
         wPrice.clear();
         rPrice.clear();
-        mPrice.clear();
+        mPrice.text = '0';
         bestBefore.clear();
         comments.clear();
         refrigerate = false;
@@ -155,6 +248,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
 
         _isEditing = false;
       });
+      _ingredients.clear();
     } else {
       Fluttertoast.showToast(
         msg: "Please Fill all the necessary Columns",
@@ -212,6 +306,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
         'unit_name': item['sell_unit_name'],
       };
     });
+    _ingredients.loadForItem(item['item_id']);
   }
 
   void clearFields() {
@@ -223,7 +318,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
       sellQnty.clear();
       wPrice.clear();
       rPrice.clear();
-      mPrice.clear();
+      mPrice.text = '0';
       bestBefore.clear();
       comments.clear();
       refrigerate = false;
@@ -246,6 +341,7 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
               ? _settings[0]['profit_percentage'].toString()
               : profitPercentValue.toString();
     });
+    _ingredients.clear();
   }
 
   void deleteModal(int itemId, String name) {
@@ -312,10 +408,43 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
   void initState() {
     super.initState();
     loadData();
+    mPrice.text = '0';
+    _ingredients.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ingredients.dispose();
+    calcW.dispose();
+    calcR.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // prices calculated from the ingredients (same function the database uses)
+    num n(String t) => num.tryParse(t) ?? 0;
+    final prices = _ingredients.breakdown(
+      workPct: n(workPercent.text),
+      profitPct: n(profitPercent.text),
+      retailPct: n(retailPercent.text),
+    );
+    final bool locked = _ingredients.hasIngredients;
+    if (locked) {
+      calcW.text = prices.wholesale.toString();
+      calcR.text = prices.retail.toString();
+    }
+    final num mNow = n(mPrice.text);
+    final num rNow = locked ? prices.retail : n(rPrice.text);
+    final num diff = mNow - rNow;
+    final bool showDiff =
+        locked || (rPrice.text.isNotEmpty && mPrice.text.isNotEmpty);
+    final String baseLabel = baseQnty.text.isEmpty
+        ? ''
+        : '${baseQnty.text} ${selectedBaseUnit['unit_name'] ?? ''}'.trim();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -699,107 +828,60 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                             style: TextStyle(color: _orange, fontSize: 18),
                           ),
                           Padding(
-                            padding: EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(10),
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: TextField(
-                                    controller: wPrice,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                          decimal: true,
-                                        ),
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.allow(
-                                        RegExp(r'^\d*\.?\d*$'),
-                                      ),
-                                    ],
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      labelText: 'Wholesale Price',
-                                      labelStyle: const TextStyle(
-                                        color: Colors.black,
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: _orange),
-                                      ),
-                                    ),
-                                    onSubmitted: (value) {
-                                      num wholesale = num.parse(value);
-                                      num retail =
-                                          (wholesale +
-                                                  (wholesale *
-                                                      num.parse(
-                                                        retailPercent.text,
-                                                      ) /
-                                                      100))
-                                              .round();
+                                  child: locked
+                                      ? _priceField(
+                                          controller: calcW,
+                                          label: 'Wholesale',
+                                          locked: true,
+                                        )
+                                      : _priceField(
+                                          controller: wPrice,
+                                          label: 'Wholesale',
+                                          onChanged: (_) => setState(() {}),
+                                          onSubmitted: (value) {
+                                            num wholesale =
+                                                num.tryParse(value) ?? 0;
+                                            num retail =
+                                                (wholesale +
+                                                        (wholesale *
+                                                            (num.tryParse(
+                                                                  retailPercent
+                                                                      .text,
+                                                                ) ??
+                                                                0) /
+                                                            100))
+                                                    .round();
 
-                                      rPrice.text = retail.toString();
-                                      mPrice.text = retail.toString();
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextField(
-                                    controller: rPrice,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                          decimal: true,
+                                            setState(() {
+                                              rPrice.text = retail.toString();
+                                            });
+                                          },
                                         ),
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.allow(
-                                        RegExp(r'^\d*\.?\d*$'),
-                                      ),
-                                    ],
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      labelText: 'Retail Price',
-                                      labelStyle: const TextStyle(
-                                        color: Colors.black,
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: _orange),
-                                      ),
-                                    ),
-                                    onSubmitted: (value) {
-                                      mPrice.text = value;
-                                    },
-                                  ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                                 Expanded(
-                                  child: TextField(
+                                  child: locked
+                                      ? _priceField(
+                                          controller: calcR,
+                                          label: 'Retail',
+                                          locked: true,
+                                        )
+                                      : _priceField(
+                                          controller: rPrice,
+                                          label: 'Retail',
+                                          onChanged: (_) => setState(() {}),
+                                        ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _priceField(
                                     controller: mPrice,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                          decimal: true,
-                                        ),
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.allow(
-                                        RegExp(r'^\d*\.?\d*$'),
-                                      ),
-                                    ],
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      labelText: 'Menu Price',
-                                      labelStyle: const TextStyle(
-                                        color: Colors.black,
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: _orange),
-                                      ),
-                                    ),
+                                    label: 'Menu',
+                                    onChanged: (_) => setState(() {}),
                                   ),
                                 ),
                               ],
@@ -811,7 +893,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                               children: [
                                 Expanded(
                                   child: TextField(
-                                    obscureText: true,
+                                    obscureText: !_showPercents,
+                                    readOnly: !_showPercents,
                                     controller: retailPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
@@ -826,7 +909,9 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      labelText: 'Retail Price Percentage',
+                                      filled: !_showPercents,
+                                      fillColor: Colors.grey.shade200,
+                                      labelText: 'Retail %',
                                       labelStyle: const TextStyle(
                                         color: Colors.black,
                                       ),
@@ -840,7 +925,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: TextField(
-                                    obscureText: true,
+                                    obscureText: !_showPercents,
+                                    readOnly: !_showPercents,
                                     controller: workPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
@@ -855,7 +941,9 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      labelText: 'Work Cost Percentage',
+                                      filled: !_showPercents,
+                                      fillColor: Colors.grey.shade200,
+                                      labelText: 'Work Cost %',
                                       labelStyle: const TextStyle(
                                         color: Colors.black,
                                       ),
@@ -869,7 +957,8 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: TextField(
-                                    obscureText: true,
+                                    obscureText: !_showPercents,
+                                    readOnly: !_showPercents,
                                     controller: profitPercent,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
@@ -884,7 +973,9 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      labelText: 'Profit Percentage',
+                                      filled: !_showPercents,
+                                      fillColor: Colors.grey.shade200,
+                                      labelText: 'Profit %',
                                       labelStyle: const TextStyle(
                                         color: Colors.black,
                                       ),
@@ -895,10 +986,80 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: InputDecorator(
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 18,
+                                          ),
+                                      labelText: 'Difference',
+                                      labelStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                      filled: true,
+                                      fillColor: showDiff && diff != 0
+                                          ? differenceColor(
+                                              diff,
+                                            ).withValues(alpha: 0.12)
+                                          : Colors.transparent,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      showDiff
+                                          ? '${diff > 0 ? '+' : ''}${diff.round()}'
+                                          : '',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: differenceColor(diff),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          // show / hide the three percentage fields
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: _togglePercents,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _showPercents
+                                            ? 'Hide percentages'
+                                            : 'Show percentages',
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        _showPercents
+                                            ? Icons.visibility
+                                            : Icons.visibility_off,
+                                        size: 18,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                           Padding(
                             padding: EdgeInsets.all(10),
                             child: Row(
@@ -1212,22 +1373,18 @@ class _MenuitemsPageState extends State<MenuitemsPage> {
                       ),
                     ),
                     // Right section
-                    const SizedBox(
-                      width: 550,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Text(
-                              'Ingredients',
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: Colors.black,
-                              ),
-                            ),
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: 550,
+                        child: SingleChildScrollView(
+                          child: IngredientsPanel(
+                            controller: _ingredients,
+                            prices: prices,
+                            baseLabel: baseLabel,
+                            showBreakdown: _showPercents,
                           ),
-                          // Add your right section content here
-                        ],
+                        ),
                       ),
                     ),
                   ],
