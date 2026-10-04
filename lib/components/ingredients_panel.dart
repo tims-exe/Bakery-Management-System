@@ -179,7 +179,11 @@ class IngredientsPanel extends StatelessWidget {
         Center(
           child: Text(
             baseLabel.isEmpty ? 'Ingredients' : 'Ingredients for $baseLabel',
-            style: const TextStyle(fontSize: 20, color: Colors.black),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -200,23 +204,38 @@ class IngredientsPanel extends StatelessWidget {
           'Total Packing',
           prices.packing,
         ),
-        if (showBreakdown && controller.hasIngredients) ...[
+        if (controller.hasIngredients) ...[
           const SizedBox(height: 10),
-          _summaryRow('Work Cost', _money(prices.work)),
-          _summaryRow('Profit Value', _money(prices.profit)),
+          if (showBreakdown) ...[
+            _summaryRow('Work Cost', _money(prices.work)),
+            _summaryRow('Profit Value', _money(prices.profit)),
+          ],
+          _summaryRow('Total Cost', _money(prices.total), highlight: true),
         ],
       ],
     );
   }
 
-  Widget _summaryRow(String label, String value) {
+  Widget _summaryRow(String label, String value, {bool highlight = false}) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 1),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: highlight
+          ? BoxDecoration(
+              color: _totalBg,
+              borderRadius: BorderRadius.circular(10),
+            )
+          : null,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 17)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: highlight ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
           Text(
             value,
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
